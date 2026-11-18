@@ -1,0 +1,43 @@
+name: SlimDash
+version: "0.8.68"
+slug: slimdash
+description: Your Home Assistant dashboards as live, ultra-light pages for old tablets, phones and e-readers (Android 4, iOS 7+, Kindle)
+url: https://github.com/myB0B/HA-SlimDash
+arch:
+  - aarch64
+  - amd64
+init: false
+startup: application
+boot: auto
+homeassistant_api: true
+ports:
+  8099/tcp: 8099
+ports_description:
+  8099/tcp: SlimDash page (tablet browser)
+webui: "http://[HOST]:[PORT:8099]/"
+options:
+  dashboards:
+    - name: kindle
+      dashboard: lovelace
+      views: "4"
+      tabs_bottom: false
+      refresh: 0
+      device: auto
+  allowed_networks:
+    - 192.168.0.0/16
+    - 10.0.0.0/8
+  log_level: info
+schema:
+  dashboards:
+    - name: match(^[A-Za-z0-9][A-Za-z0-9_-]*$)
+      dashboard: str
+      views: str
+      tabs_bottom: bool
+      refresh: int(0,3600)
+      device: list(auto|type 1|type 2|type 3)
+      theme: list(view|ha light|ha dark)?
+  allowed_networks:
+    - str
+  log_level: list(debug|info|warning)
+  access_key: password?
+  frigate_url: str?

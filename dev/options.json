@@ -1,0 +1,1 @@
+{"dashboards": [{"name": "demo", "dashboard": "slimdash-demo", "views": "0,1,2,3,4", "tabs_bottom": true, "refresh": 0, "device": "auto"}], "allowed_networks": ["127.0.0.0/8"], "log_level": "debug"}

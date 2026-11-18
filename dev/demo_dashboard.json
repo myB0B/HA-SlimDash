@@ -1,0 +1,500 @@
+{
+ "title": "SlimDash démo",
+ "views": [
+  {
+   "title": "Tuiles",
+   "path": "tuiles",
+   "type": "sections",
+   "badges": [
+    {
+     "type": "entity",
+     "entity": "sensor.jardin_th_exterieur_temperature"
+    },
+    {
+     "type": "entity",
+     "entity": "sensor.maison_temperature_moyenne"
+    },
+    {
+     "type": "entity",
+     "entity": "binary_sensor.radar_bureau_presence"
+    }
+   ],
+   "sections": [
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Interrupteurs de test",
+       "icon": "mdi:toggle-switch"
+      },
+      {
+       "type": "tile",
+       "entity": "input_boolean.slimdash_demo_lampe",
+       "icon": "mdi:lightbulb"
+      },
+      {
+       "type": "tile",
+       "entity": "input_boolean.slimdash_demo_prise",
+       "icon": "mdi:power-plug"
+      },
+      {
+       "type": "button",
+       "entity": "input_boolean.slimdash_demo_lampe",
+       "name": "Bouton lampe",
+       "show_state": true,
+       "icon": "mdi:lightbulb"
+      },
+      {
+       "type": "button",
+       "entity": "input_button.slimdash_demo_bouton",
+       "name": "Appuyer",
+       "icon": "mdi:gesture-tap"
+      },
+      {
+       "type": "custom:mushroom-entity-card",
+       "entity": "input_boolean.slimdash_demo_prise",
+       "name": "Mushroom prise",
+       "icon": "mdi:power-socket-fr"
+      },
+      {
+       "type": "custom:button-card",
+       "entity": "input_boolean.slimdash_demo_lampe",
+       "name": "Button-card",
+       "show_state": true,
+       "icon": "mdi:ceiling-light"
+      },
+      {
+       "type": "custom:mushroom-template-card",
+       "entity": "sensor.linky_teleinfo_linky_w_instantane",
+       "primary": "Consommation",
+       "secondary": "{{ states('sensor.linky_teleinfo_linky_w_instantane') | float(0) | round(0) | int }} W",
+       "icon": "mdi:flash"
+      },
+      {
+       "type": "custom:bubble-card",
+       "card_type": "button",
+       "entity": "input_boolean.slimdash_demo_prise",
+       "name": "Bubble prise",
+       "icon": "mdi:power",
+       "show_state": true,
+       "sub_button": [
+        {
+         "entity": "sensor.linky_teleinfo_linky_w_instantane",
+         "icon": "mdi:lightning-bolt"
+        },
+        {
+         "entity": "sensor.maison_temperature_moyenne",
+         "icon": "mdi:thermometer"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Capteurs",
+       "icon": "mdi:gauge"
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.jardin_th_exterieur_temperature"
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.jardin_th_exterieur_humidite"
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.maison_temperature_moyenne"
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.linky_teleinfo_linky_w_instantane"
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.radar_bureau_presence"
+      },
+      {
+       "type": "tile",
+       "entity": "binary_sensor.radar_salon_presence"
+      },
+      {
+       "type": "custom:mushroom-chips-card",
+       "chips": [
+        {
+         "type": "entity",
+         "entity": "sensor.izypower_cloud_maison_32028_puissance_pv"
+        },
+        {
+         "type": "template",
+         "icon": "mdi:home",
+         "content": "Maison {{ states('sensor.maison_temperature_moyenne') }} °C"
+        },
+        {
+         "type": "weather",
+         "entity": "weather.home"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Nouvelle section"
+      },
+      {
+       "type": "custom:stack-in-card",
+       "title": null,
+       "keep": {
+        "border_radius": true,
+        "margin": true
+       },
+       "cards": [
+        {
+         "type": "custom:mushroom-template-card",
+         "primary": "PORTAIL",
+         "secondary": "{{ states('sensor.portail_portail_etat') }}\n",
+         "icon": "mdi:gate",
+         "badge_icon": "",
+         "icon_color": "{% if 'fermé' in states('sensor.portail_portail_etat') %}\n   green\n{% elif 'ouvert' in states('sensor.portail_portail_etat') %}\n   red\n{% else %}\n   orange\n{% endif %}\n",
+         "card_mod": {
+          "style": ":host { \n   --fc-fx: none;\n   --fc-card-blur: none;\n}\n"
+         }
+        },
+        {
+         "type": "custom:mushroom-chips-card",
+         "chips": [
+          {
+           "type": "entity",
+           "entity": "sensor.portail_portail_etat",
+           "content_info": "last-changed",
+           "use_entity_picture": false,
+           "icon": "mdi:information",
+           "icon_color": "orange"
+          }
+         ],
+         "alignment": "end",
+         "card_mod": {
+          "style": ":host { \n   --fc-fx: none;\n   --fc-card-blur: none;\n}\nha-card {\n    margin: -54px 20px 0 0;\n}\n"
+         }
+        },
+        {
+         "type": "horizontal-stack",
+         "cards": [
+          {
+           "type": "custom:button-card",
+           "name": "Piéton",
+           "show_name": true,
+           "icon": "mdi:walk",
+           "tap_action": {
+            "action": "call-service",
+            "service": "button.press",
+            "target": {
+             "entity_id": "button.portail_portail_pieton"
+            }
+           },
+           "uix": {
+            "style": "ha-card {\n  background-color: rgba(33, 150, 243, 0.5) !important;\n  font-size: 100% !important;\n  height: 60px !important;\n  /* Attend 1,5 s, puis revient progressivement */\n  transition: background-color 0.3s ease 1.5s !important;\n}\nha-card:active {\n  background-color: rgba(76, 175, 80, 0.95) !important;\n  transition: none !important;\n}\n"
+           }
+          },
+          {
+           "type": "custom:button-card",
+           "name": "Voiture",
+           "show_name": true,
+           "icon": "mdi:car",
+           "tap_action": {
+            "action": "call-service",
+            "service": "button.press",
+            "target": {
+             "entity_id": "button.portail_portail_voiture"
+            }
+           },
+           "uix": {
+            "style": "ha-card {\n  margin: 0;\n  background-color: rgba(255, 152, 0, 0.5) !important;\n  font-size: 100% !important;\n  height: 60px !important;\n  /* Attend 1,5 s, puis revient progressivement */\n  transition: background-color 0.3s ease 1.5s !important;\n}\nha-card:active {\n  background-color: rgba(76, 175, 80, 0.95) !important;\n  transition: none !important;\n}\n"
+           }
+          },
+          {
+           "type": "custom:button-card",
+           "name": "Portillon",
+           "show_name": true,
+           "icon": "mdi:gate-alert",
+           "tap_action": {
+            "action": "call-service",
+            "service": "button.press",
+            "target": {
+             "entity_id": "button.portail_portail_portillon"
+            }
+           },
+           "uix": {
+            "style": "ha-card {\n  margin: 0;\n  background-color: rgba(103, 58, 183, 0.5) !important;\n  font-size: 100% !important;\n  height: 60px !important;\n  transition: background-color 0.3s ease 1.5s !important;\n}\nha-card:active {\n  background-color: rgba(76, 175, 80, 0.95) !important;\n  transition: none !important;\n}\n"
+           }
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "type": "tile",
+       "entity": "cover.volet_bureau",
+       "name": "Volet bureau",
+       "features": [
+        {
+         "type": "cover-open-close"
+        }
+       ],
+       "features_position": "bottom",
+       "grid_options": {
+        "columns": 12,
+        "rows": 2
+       }
+      }
+     ]
+    }
+   ],
+   "theme": "test"
+  },
+  {
+   "title": "Listes",
+   "path": "listes",
+   "type": "sections",
+   "sections": [
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "entities",
+       "title": "Carte entities",
+       "entities": [
+        {
+         "type": "section",
+         "label": "Commandes"
+        },
+        {
+         "entity": "input_boolean.slimdash_demo_lampe",
+         "icon": "mdi:lightbulb"
+        },
+        {
+         "entity": "input_boolean.slimdash_demo_prise",
+         "icon": "mdi:power-plug"
+        },
+        "input_button.slimdash_demo_bouton",
+        {
+         "type": "divider"
+        },
+        {
+         "type": "section",
+         "label": "Mesures"
+        },
+        "sensor.jardin_th_exterieur_temperature",
+        "sensor.jardin_th_exterieur_humidite",
+        "sensor.environnement_pression",
+        "binary_sensor.radar_cuisine_presence",
+        {
+         "type": "attribute",
+         "entity": "weather.home",
+         "attribute": "humidity",
+         "name": "Humidité (attribut)",
+         "suffix": " %"
+        }
+       ]
+      },
+      {
+       "type": "glance",
+       "title": "Carte glance",
+       "entities": [
+        "sensor.jardin_th_exterieur_temperature",
+        "sensor.maison_temperature_moyenne",
+        "sensor.maison_humidite_moyenne",
+        "binary_sensor.radar_bureau_presence"
+       ]
+      }
+     ]
+    }
+   ],
+   "theme": "test",
+   "icon": "mdi:format-list-bulleted"
+  },
+  {
+   "title": "Graphiques",
+   "path": "graphiques",
+   "type": "sections",
+   "sections": [
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "sensor",
+       "entity": "sensor.jardin_th_exterieur_temperature",
+       "name": "Extérieur 24 h",
+       "graph": "line",
+       "hours_to_show": 24
+      },
+      {
+       "type": "sensor",
+       "entity": "sensor.linky_teleinfo_linky_w_instantane",
+       "name": "Linky 6 h",
+       "graph": "line",
+       "hours_to_show": 6
+      },
+      {
+       "type": "gauge",
+       "entity": "sensor.linky_teleinfo_linky_w_instantane",
+       "name": "Consommation",
+       "min": 0,
+       "max": 6000,
+       "severity": {
+        "green": 0,
+        "yellow": 3000,
+        "red": 4500
+       }
+      },
+      {
+       "type": "gauge",
+       "entity": "sensor.maison_humidite_moyenne",
+       "name": "Humidité maison",
+       "min": 0,
+       "max": 100
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.maison_temperature_moyenne",
+       "features": [
+        {
+         "type": "trend-graph",
+         "hours_to_show": 24
+        }
+       ]
+      },
+      {
+       "type": "history-graph",
+       "title": "Températures 24 h",
+       "hours_to_show": 24,
+       "entities": [
+        "sensor.jardin_th_exterieur_temperature",
+        "sensor.maison_temperature_moyenne"
+       ]
+      },
+      {
+       "type": "custom:statistics-graph-chart-card",
+       "card_header": "Baromètre",
+       "card_header_color": "#bdbdbd",
+       "styles": ".sgc-plot-wrap {\n    margin: -20px -14px -26px -16px;\n}\n.sgc-state-value {\n    font-weight: 300 !important;\n}\n.sgc-state-wrap .sgc-state-align-left {\n    margin-top: -12px;\n}",
+       "show_y_axis": false,
+       "show_x_axis": false,
+       "animate_graph": true,
+       "points_per_hour": 0.5,
+       "tooltip_match_axis": false,
+       "tooltip_order": "default",
+       "height": 120,
+       "update_interval": 300,
+       "x_grid_style": "dashed",
+       "y_grid_style": "dashed",
+       "entities": [
+        {
+         "entity": "sensor.environnement_pression",
+         "name": "Température",
+         "state_size": "50px",
+         "hide_name": true,
+         "show_color_dot": false,
+         "line_width": 3,
+         "tap_action": {
+          "action": "more-info"
+         },
+         "show_trend_icon": false,
+         "graph_type": "bar",
+         "show_extrema": "never",
+         "decimals": 0
+        }
+       ]
+      },
+      {
+       "type": "custom:statistics-graph-chart-card",
+       "card_header": "Extérieur (carte perso)",
+       "entities": [
+        {
+         "entity": "sensor.jardin_th_exterieur_temperature",
+         "name": "Température",
+         "color": "#00FF50"
+        },
+        {
+         "entity": "sensor.jardin_th_exterieur_humidite",
+         "name": "Humidité",
+         "color": "#378ADD"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "theme": "test",
+   "icon": "mdi:chart-line",
+   "show_icon_and_title": true
+  },
+  {
+   "title": "Caméras",
+   "path": "cameras",
+   "type": "sections",
+   "sections": [
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "picture-glance",
+       "title": "Portail",
+       "camera_image": "camera.portail",
+       "entities": [
+        "binary_sensor.radar_bureau_presence"
+       ]
+      },
+      {
+       "type": "picture-entity",
+       "entity": "camera.facade",
+       "name": "Façade"
+      }
+     ]
+    }
+   ],
+   "theme": "test"
+  },
+  {
+   "title": "Météo",
+   "path": "meteo",
+   "type": "sections",
+   "sections": [
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "custom:digital-clock"
+      },
+      {
+       "type": "weather-forecast",
+       "entity": "weather.home",
+       "forecast_type": "daily"
+      },
+      {
+       "type": "markdown",
+       "content": "## Bonjour\nIl fait **{{ states('sensor.jardin_th_exterieur_temperature') }} °C** dehors et {{ states('sensor.maison_temperature_moyenne') }} °C dedans."
+      },
+      {
+       "show_current": true,
+       "show_forecast": false,
+       "type": "weather-forecast",
+       "entity": "weather.home",
+       "forecast_type": "daily"
+      }
+     ]
+    }
+   ],
+   "theme": "test"
+  }
+ ]
+}

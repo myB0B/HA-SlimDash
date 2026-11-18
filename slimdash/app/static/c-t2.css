@@ -1,0 +1,179 @@
+/* SlimDash - type 2 (navigateurs ~2016-2019), chargee apres s.css : flexbox et variables CSS. */
+
+/* ===== Base, bandeau, onglets, grille des cartes ===== */
+html, body { background: var(--bg); }
+body { color: var(--text); }
+.card { background: var(--card); border-radius: var(--radius); box-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
+.card h2 { color: var(--muted); }
+.ic { display: block; width: 24px; height: 24px; }
+.hs { display: flex; width: auto; margin: 0 -4px 8px; border-spacing: 0; }
+.hs > .card, .hs > div { display: block; flex: 1 1 0; min-width: 0; margin: 0 4px; }
+.hd .ic { display: inline-block; width: 18px; height: 18px; vertical-align: -3px; margin-right: 6px; }
+#tabs.bot { background: var(--card); border-top-color: var(--line); }
+#tabs.bot .tab.cur { border-top-color: var(--accent); }
+.vs > .tile.rt { display: flex; }
+.sect > .hs { width: auto; margin-right: 4px; }
+.card .ch { color: var(--text); }
+.w2 { color: var(--muted); }
+.hd .badge .ic { width: 16px; height: 16px; margin-right: 5px; }
+
+/* ===== Lignes (carte entities), boutons, interrupteurs ===== */
+.sub { color: var(--muted); }
+.row { border-bottom-color: var(--line); }
+.ri { display: table-cell; width: 40px; vertical-align: middle; color: var(--muted); }
+.ri.on, .ri.on .ic { color: var(--c); }
+.ri .ic { width: 22px; height: 22px; }
+.ri .ic { color: inherit; }
+.ri.dc-def { color: #5d9ad1; }
+.tg.on { background: var(--accent); }
+.btn.cv { background: rgba(255, 255, 255, .08); border-radius: 10px; }
+.sec { color: var(--text); border-top-color: var(--line); }
+.row .btn.lk { color: var(--accent); }
+
+/* ===== Tuiles et boutons ===== */
+.dc-def { --c: #03a9f4; }
+.dc-light { --c: #ffb300; }
+.dc-switch { --c: #2196f3; }
+.dc-fan { --c: #00bcd4; }
+.dc-cover { --c: #ab47bc; }
+.dc-lock { --c: #4caf50; }
+.dc-climate { --c: #ff6f00; }
+.dc-media { --c: #5c6bc0; }
+.dc-vacuum { --c: #4caf50; }
+.dc-binary { --c: #ff7043; }
+.dc-person { --c: #26a69a; }
+.tile.rt { display: flex; flex-wrap: wrap; align-items: center; text-align: left; background: var(--card); }
+.rt.on .tn { color: var(--text); }
+.rt .ti { flex: none; position: relative; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.rt.on .ti, .rt.on .ti .ic { color: var(--c); }
+.rt.on .ti:before { background: var(--c); opacity: .2; }
+.rt .ti .ic, .sic .rt .ti .ic { position: relative; top: auto; left: auto; }
+.tile.rt .ti, .tile.rt.on .ti { float: none; background: none; }
+.rt .tx { overflow: visible; flex: 1 1 0; min-width: 0; }
+.rt .tx.one { padding-top: 1px; }
+.rt .tn { display: block; margin: 0; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rt .ts { display: block; margin: 2px 0 0; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rt.na { opacity: .55; }
+.rt .chart { flex: 0 0 100%; }
+.tile.tb { flex-wrap: nowrap; }
+.rt .subs { order: 3; float: none; flex: none; margin: 0 0 0 8px; }
+.ti .ic { color: inherit; }
+.dc-def .ri, .dc-def .gic { color: #5d9ad1; }
+.subs .badge { background: transparent; }
+.tile.rt.w3, .tile.rt.w4, .tile.rt.w6, .tile.rt.w9 { display: inline-flex; vertical-align: top; }
+.tile.rt.vt { flex-direction: column; justify-content: center; align-items: center; }
+.vt .tx { flex: none; width: 100%; }
+.rt .ti[class*="mc-"]:before { display: none; }
+.rt .cvb { flex: 0 0 100%; }
+.tile.tf .lsl, .tile.tf .lfv, .tile.tf .ftg { flex: 0 0 auto; width: calc(100% - 4px); margin-top: 14px; }
+.rt .fsp { flex: 0 0 100%; }
+.tile.tf.tfx .lsl, .tile.tf.tfx .lfv, .tile.tf.tfx .ftg, .tile.tf.tfx .chart, .tile.tf.tfx .cvb { margin-top: 12px; }
+.tile.rt.bc { justify-content: center; flex-wrap: nowrap; }
+.rt.bc .ti { margin: 0 6px 0 0; }
+.rt.bc .ti:before { display: none; }
+.rt.bc .tx { flex: none; width: auto; }
+.tile.rt { min-height: 0; padding: 10px; }
+.rt .ti { width: 36px; height: 36px; margin-right: 10px; }
+.rt .ti:before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #fff; opacity: .06; border-radius: 18px; }
+.vt .ti { width: 40px; height: 40px; margin: 0 0 8px; }
+.vt .ti:before { border-radius: 20px; }
+.rt.vt.big5 .ti { width: 140px; height: 140px; margin: 0 0 16px; }
+.rt.vt.big5 .ti:before { display: none; }
+.rt .tn { font-size: 14px; line-height: 20px; font-weight: 500; }
+.rt .ts { font-size: 12px; line-height: 16px; margin-top: 0; }
+.bt .ti:before { display: none; }
+.nb .ts { color: var(--muted); }
+.subs .badge .ic { width: 16px; height: 16px; margin-right: 5px; }
+.tile.rt.nb { padding: 8px 6px 4px; }
+.tile.rt.vt { flex-wrap: nowrap; }
+.nb.vt .ti { margin: 0 0 4px; }
+.tile.rt.tf { align-content: flex-start; padding-top: 15px; }
+.rt .chart.fi { flex: 0 0 45%; order: 3; margin: 0 0 0 12px; }
+.tile.rt.tfi { flex-wrap: nowrap; }
+.subs .badge.io .ic { margin-right: 0; }
+
+/* ===== Badges et chips ===== */
+.badge { display: inline-flex; align-items: center; background: var(--card); border: 1px solid var(--line); }
+.badge.on .ic { color: var(--c); }
+.badge .ic { color: inherit; }
+.badge.dc-def .ic { color: #5d9ad1; }
+.badge .ic { width: 18px; height: 18px; margin-right: 8px; }
+.badge.io .ic { margin-right: 0; }
+.wchip .ic { color: #ffc107; }
+
+/* ===== Valeurs : sensor, jauge, glance ===== */
+.big .tn { color: var(--muted); }
+.ga, .gw { display: block; }
+.gic { color: var(--muted); margin: 4px 0; }
+.gi.on .gic, .gi.on .gic .ic { color: var(--c); }
+.gi.on .gs { color: var(--text); }
+.gic .ic { margin: 0 auto; color: inherit; }
+.gi.dc-def .gic { color: #5d9ad1; }
+.big .tn .ic { display: inline-block; width: 18px; height: 18px; vertical-align: -3px; margin-right: 6px; }
+.gauge { text-align: center; }
+.ga path { fill: none; stroke-width: 12; stroke-linecap: butt; }
+.ga .gb { stroke: var(--line); }
+.ga .gv { stroke: var(--accent); }
+.ga .gv.grn { stroke: #43a047; }
+.ga .gv.yel { stroke: #ffa600; }
+.ga .gv.red { stroke: #db4437; }
+.ga .gv.na { stroke: transparent; }
+.bar { border-radius: 6px; background: var(--line); }
+.bar i { background: var(--accent); }
+.gw { width: 120px; height: 67px; margin: 4px auto 0; }
+.ga { width: 120px; height: 67px; }
+.gt { font-size: 20px; line-height: 24px; margin-top: -22px; }
+.g3 .gw { width: 220px; height: 123px; margin: 8px auto 0; }
+.g3 .ga { width: 220px; height: 123px; }
+.g3 .gt { font-size: 38px; line-height: 40px; margin-top: -50px; }
+.gfx .gw { width: 100%; max-width: 120px; height: auto; margin: 4px auto 0; }
+.g3.gfx .gw { max-width: 220px; margin-top: 8px; }
+.gfx .gp { position: relative; height: 0; padding-bottom: 56%; }
+.gfx .gin, .gfx .ga { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.gfx .gtx { font-size: 17px; fill: currentColor; }
+.g3.gfx .tn { margin-top: 12px; }
+.gn, .gauge .tn { color: var(--text); }
+.big .u { color: var(--muted); }
+
+/* ===== Météo ===== */
+.wx .tn { color: var(--muted); }
+.wsym .ic { width: 40px; height: 40px; color: #ffc107; margin: 0 auto; }
+.wcur .wsym { vertical-align: middle; }
+.fd .wsym { display: block; width: auto; }
+.fd .wsym .ic { width: 26px; height: 26px; margin: 3px auto; }
+.wl, .fn, .fl { color: var(--muted); }
+.wx .w2 .ic { display: inline-block; }
+
+/* ===== Graphiques et cartes statistiques ===== */
+.chart { display: block; }
+.chart { margin-top: 8px; }
+.sp { display: block; width: 100%; overflow: visible; }
+.sp polyline { fill: none; stroke-width: 2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.sp polygon { opacity: .12; stroke: none; }
+.sp.nodata { font-size: 12px; color: var(--muted); padding: 6px 0; }
+.mm { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+.fb.sg1 { text-align: left; }
+.fb .sv { font-weight: 300; white-space: nowrap; overflow: hidden; }
+.fb .sv .u, .fb .gs .u { font-size: 45%; font-weight: bold; margin-left: 3px; }
+.fb .chart.bleed { margin: 6px -12px -10px; }
+.sp.bars { display: block; width: 100%; }
+.fb.sg1 h2 { margin-bottom: 0; }
+.fb.sg1 .chart.bleed { margin-top: 2px; }
+.lv { color: var(--muted); }
+.lg i { vertical-align: -2px; }
+.sl .sx { color: var(--muted); }
+.sz .sv .u { font-size: 50%; font-weight: 600; }
+
+/* ===== Autres ===== */
+:root { --bg: #111318; --card: #1c1f26; --line: #2b2f38; --text: #e3e3e3; --muted: #9aa0a6; --accent: #03a9f4; --radius: 12px; }
+.tab.cur { border-bottom-color: var(--accent); }
+
+/* ===== stack-in-card (carte portail) : valeurs propres, à ne pas modifier ===== */
+.sic > .tile.rt { flex-wrap: nowrap; display: flex; }
+.sic .hs { display: flex; }
+.sic .tile.rt { padding: 10px 12px; }
+.sic .rt .ti { width: 40px; height: 40px; margin-right: 12px; }
+.sic .rt .ti:before { border-radius: 20px; }
+.sic .rt.bc .ti { width: 30px; height: 30px; margin: 0 6px 0 0; }
+.sic .card { -webkit-box-sizing: content-box; box-sizing: content-box; }
+.sic .rt .tn { font-weight: normal; }

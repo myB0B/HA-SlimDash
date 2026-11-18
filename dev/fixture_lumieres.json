@@ -1,0 +1,1072 @@
+{
+ "views": [
+  {
+   "title": "Lumières",
+   "type": "sections",
+   "sections": [
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "tile",
+       "entity": "light.lampe_bleue"
+      },
+      {
+       "type": "tile",
+       "entity": "light.lampe_simple"
+      },
+      {
+       "type": "tile",
+       "entity": "light.lampe_bureau"
+      },
+      {
+       "type": "button",
+       "entity": "light.lampe_bleue"
+      },
+      {
+       "type": "entities",
+       "entities": [
+        "light.lampe_bleue",
+        "light.lampe_simple",
+        "light.lampe_bureau"
+       ]
+      },
+      {
+       "type": "glance",
+       "entities": [
+        "light.lampe_bleue",
+        "light.lampe_simple",
+        "light.lampe_bureau"
+       ]
+      },
+      {
+       "type": "custom:mushroom-entity-card",
+       "entity": "light.lampe_bleue"
+      },
+      {
+       "type": "custom:bubble-card",
+       "card_type": "button",
+       "entity": "light.lampe_bleue"
+      }
+     ]
+    }
+   ],
+   "badges": [
+    {
+     "type": "entity",
+     "entity": "light.lampe_bleue"
+    }
+   ],
+   "theme": "test"
+  },
+  {
+   "title": "Test lampes",
+   "type": "sections",
+   "sections": [
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "tile",
+       "entity": "light.lampe_salon",
+       "features": [
+        {
+         "type": "light-color-favorites"
+        }
+       ],
+       "grid_options": {
+        "columns": 12,
+        "rows": 2
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "light.lampe_salon",
+       "features": [
+        {
+         "type": "light-brightness"
+        }
+       ],
+       "grid_options": {
+        "columns": 12,
+        "rows": 2
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "light.lampe_salon",
+       "features": [
+        {
+         "type": "light-color-temp"
+        }
+       ],
+       "grid_options": {
+        "columns": "full",
+        "rows": 2
+       }
+      }
+     ]
+    }
+   ],
+   "theme": "test"
+  },
+  {
+   "title": "TEST",
+   "theme": "test",
+   "type": "sections",
+   "sections": [
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Caméras"
+      },
+      {
+       "type": "picture-glance",
+       "camera_image": "camera.facade",
+       "title": "Façade",
+       "entities": [
+        "light.lampe_salon"
+       ]
+      },
+      {
+       "type": "picture-entity",
+       "entity": "camera.portail",
+       "name": "Portail",
+       "grid_options": {
+        "columns": 6
+       }
+      },
+      {
+       "type": "picture-entity",
+       "entity": "camera.sonnette",
+       "name": "Sonnette",
+       "grid_options": {
+        "columns": 6
+       }
+      },
+      {
+       "type": "picture-glance",
+       "camera_image": "camera.jardin",
+       "title": null,
+       "entities": [],
+       "aspect_ratio": "16:9"
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Carte light"
+      },
+      {
+       "type": "light",
+       "entity": "light.lampe_salon"
+      },
+      {
+       "type": "light",
+       "entity": "light.lampe_bleue",
+       "grid_options": {
+        "columns": 6
+       }
+      },
+      {
+       "type": "light",
+       "entity": "light.lampe_eteinte",
+       "grid_options": {
+        "columns": 6
+       }
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "tile",
+       "entity": "light.lampe_salon",
+       "features": [
+        {
+         "type": "toggle"
+        },
+        {
+         "type": "light-brightness"
+        },
+        {
+         "type": "light-color-temp"
+        },
+        {
+         "type": "light-color-favorites"
+        }
+       ],
+       "grid_options": {
+        "columns": 12,
+        "rows": 2
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "light.lampe_bleue",
+       "features": [
+        {
+         "type": "light-brightness"
+        }
+       ],
+       "grid_options": {
+        "columns": 6,
+        "rows": 2
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "light.lampe_bureau",
+       "features": [
+        {
+         "type": "light-color-temp"
+        }
+       ],
+       "grid_options": {
+        "columns": 6,
+        "rows": 2
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "light.lampe_eteinte",
+       "features": [
+        {
+         "type": "toggle"
+        },
+        {
+         "type": "light-brightness"
+        }
+       ]
+      },
+      {
+       "type": "energy-self-sufficiency-gauge",
+       "grid_options": {
+        "columns": 4,
+        "rows": "auto"
+       }
+      },
+      {
+       "type": "entities",
+       "entities": [
+        {
+         "entity": "sensor.dernier_demarrage",
+         "name": "Dernier démarrage"
+        },
+        {
+         "entity": "sensor.derniere_sauvegarde"
+        },
+        {
+         "entity": "sensor.derniere_sauvegarde",
+         "name": "Sauvegarde (date et heure)",
+         "format": "datetime"
+        }
+       ]
+      },
+      {
+       "type": "entities",
+       "entities": [
+        {
+         "entity": "switch.adguard_filtrage"
+        },
+        {
+         "entity": "switch.adguard_filtrage_2"
+        }
+       ],
+       "show_header_toggle": true,
+       "title": "AdGuard"
+      },
+      {
+       "type": "entities",
+       "title": "Champs modifiables",
+       "entities": [
+        "number.zone_1_duree",
+        "number.grassy_tonte",
+        "input_number.score",
+        "time.grassy_depart",
+        "select.commandes",
+        "input_text.message",
+        "input_datetime.reveil"
+       ]
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Jauges en pile"
+      },
+      {
+       "type": "horizontal-stack",
+       "cards": [
+        {
+         "type": "gauge",
+         "entity": "sensor.maison_humidite_moyenne",
+         "name": "PV1",
+         "min": 0,
+         "max": 100,
+         "needle": false,
+         "severity": {
+          "green": 0,
+          "yellow": 0,
+          "red": 520
+         }
+        },
+        {
+         "type": "gauge",
+         "entity": "sensor.maison_humidite_moyenne",
+         "name": "PV2",
+         "min": 0,
+         "max": 100,
+         "needle": false,
+         "severity": {
+          "green": 0,
+          "yellow": 0,
+          "red": 520
+         }
+        },
+        {
+         "type": "gauge",
+         "entity": "sensor.maison_humidite_moyenne",
+         "name": "PV3",
+         "min": 0,
+         "max": 100,
+         "needle": false,
+         "severity": {
+          "green": 0,
+          "yellow": 0,
+          "red": 520
+         }
+        },
+        {
+         "type": "gauge",
+         "entity": "sensor.maison_humidite_moyenne",
+         "name": "PV4",
+         "min": 0,
+         "max": 100,
+         "needle": false,
+         "severity": {
+          "green": 0,
+          "yellow": 0,
+          "red": 520
+         }
+        },
+        {
+         "type": "gauge",
+         "entity": "sensor.maison_humidite_moyenne",
+         "name": "PV5",
+         "min": 0,
+         "max": 100,
+         "needle": false,
+         "severity": {
+          "green": 0,
+          "yellow": 0,
+          "red": 520
+         }
+        },
+        {
+         "type": "gauge",
+         "entity": "sensor.maison_humidite_moyenne",
+         "name": "PV6",
+         "min": 0,
+         "max": 100,
+         "needle": false,
+         "severity": {
+          "green": 0,
+          "yellow": 0,
+          "red": 520
+         }
+        }
+       ]
+      },
+      {
+       "type": "horizontal-stack",
+       "cards": [
+        {
+         "type": "gauge",
+         "entity": "sensor.maison_temperature_moyenne",
+         "name": "Tension",
+         "min": 0,
+         "max": 40,
+         "needle": false,
+         "severity": {
+          "green": 0,
+          "yellow": 20,
+          "red": 30
+         }
+        },
+        {
+         "type": "gauge",
+         "entity": "sensor.jardin_th_exterieur_humidite",
+         "name": "Courant",
+         "min": 0,
+         "max": 100,
+         "needle": false,
+         "severity": {
+          "green": 0,
+          "yellow": 20,
+          "red": 40
+         }
+        }
+       ]
+      },
+      {
+       "type": "gauge",
+       "entity": "sensor.maison_humidite_moyenne",
+       "name": "Autosuffisance jour",
+       "min": 0,
+       "max": 100,
+       "severity": {
+        "green": 66,
+        "yellow": 33,
+        "red": 0
+       },
+       "grid_options": {
+        "columns": 6,
+        "rows": 3
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.maison_temperature_moyenne",
+       "name": "Production totale",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.maison_humidite_moyenne",
+       "name": "Autosuffisance mois",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.jardin_th_exterieur_humidite",
+       "name": "Autosuffisance année",
+       "grid_options": {
+        "columns": 6,
+        "rows": 1
+       }
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Postes"
+      },
+      {
+       "type": "custom:stack-in-card",
+       "mode": "vertical",
+       "keep": {
+        "border_radius": true,
+        "margin": true
+       },
+       "grid_options": {
+        "columns": 6
+       },
+       "cards": [
+        {
+         "type": "custom:mushroom-template-card",
+         "entity": "sensor.linky_teleinfo_linky_w_instantane",
+         "primary": "Perso",
+         "icon": "mdi:lightning-bolt",
+         "secondary": "{{ states('sensor.linky_teleinfo_linky_w_instantane')|float(0)|round(0)|int }} W",
+         "color": "{% set p = states('sensor.linky_teleinfo_linky_w_instantane')|float(0) %}{{ 'disabled' if p < 5 else ('orange' if p < 500 else 'red') }}",
+         "tap_action": {
+          "action": "more-info"
+         },
+         "hold_action": {
+          "action": "none"
+         },
+         "uix": {
+          "style": "ha-card {backdrop-filter: none; background: transparent; box-shadow: none; border: none;}"
+         }
+        },
+        {
+         "type": "custom:statistics-graph-chart-card",
+         "styles": "ha-card {background: transparent; box-shadow: none; border: none;}\n.sgc-plot-wrap { margin: -20px -20px -24px -20px; }\nha-card {margin-top: -20px;}",
+         "show_now_line": false,
+         "show_grid": false,
+         "show_y_axis": false,
+         "show_x_axis": false,
+         "show_legend": false,
+         "animate_graph": false,
+         "hours_to_show": 24,
+         "points_per_hour": 12,
+         "height": 89,
+         "line_width": 2,
+         "entities": [
+          {
+           "entity": "sensor.linky_teleinfo_linky_w_instantane",
+           "name": "Perso",
+           "show_state": false,
+           "hide_name": true,
+           "show_color_dot": false,
+           "show_trend_icon": false,
+           "line_width": 2,
+           "color_thresholds": {
+            "enabled": true,
+            "direction": "vertical",
+            "values": [
+             {
+              "value": 0,
+              "color": "#4a90d9"
+             },
+             {
+              "value": 1000,
+              "color": "#4a90d9"
+             },
+             {
+              "value": 1700,
+              "color": "#ff9800"
+             },
+             {
+              "value": 2500,
+              "color": "#ff3333"
+             }
+            ]
+           }
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "type": "custom:stack-in-card",
+       "mode": "vertical",
+       "keep": {
+        "border_radius": true,
+        "margin": true
+       },
+       "grid_options": {
+        "columns": 6
+       },
+       "cards": [
+        {
+         "type": "custom:mushroom-template-card",
+         "entity": "sensor.linky_teleinfo_linky_w_instantane",
+         "primary": "Serveurs",
+         "icon": "mdi:lightning-bolt",
+         "secondary": "{{ states('sensor.linky_teleinfo_linky_w_instantane')|float(0)|round(0)|int }} W",
+         "color": "{% set p = states('sensor.linky_teleinfo_linky_w_instantane')|float(0) %}{{ 'disabled' if p < 5 else ('orange' if p < 500 else 'red') }}",
+         "tap_action": {
+          "action": "more-info"
+         },
+         "hold_action": {
+          "action": "none"
+         },
+         "uix": {
+          "style": "ha-card {backdrop-filter: none; background: transparent; box-shadow: none; border: none;}"
+         }
+        },
+        {
+         "type": "custom:statistics-graph-chart-card",
+         "styles": "ha-card {background: transparent; box-shadow: none; border: none;}\n.sgc-plot-wrap { margin: -20px -20px -24px -20px; }\nha-card {margin-top: -20px;}",
+         "show_now_line": false,
+         "show_grid": false,
+         "show_y_axis": false,
+         "show_x_axis": false,
+         "show_legend": false,
+         "animate_graph": false,
+         "hours_to_show": 24,
+         "points_per_hour": 12,
+         "height": 89,
+         "line_width": 2,
+         "entities": [
+          {
+           "entity": "sensor.linky_teleinfo_linky_w_instantane",
+           "name": "Serveurs",
+           "show_state": false,
+           "hide_name": true,
+           "show_color_dot": false,
+           "show_trend_icon": false,
+           "line_width": 2,
+           "color_thresholds": {
+            "enabled": true,
+            "direction": "vertical",
+            "values": [
+             {
+              "value": 0,
+              "color": "#4a90d9"
+             },
+             {
+              "value": 1000,
+              "color": "#4a90d9"
+             },
+             {
+              "value": 1700,
+              "color": "#ff9800"
+             },
+             {
+              "value": 2500,
+              "color": "#ff3333"
+             }
+            ]
+           }
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "type": "custom:stack-in-card",
+       "mode": "vertical",
+       "keep": {
+        "border_radius": true,
+        "margin": true
+       },
+       "grid_options": {
+        "columns": 6
+       },
+       "cards": [
+        {
+         "type": "custom:mushroom-template-card",
+         "entity": "sensor.linky_teleinfo_linky_w_instantane",
+         "primary": "Domotique",
+         "icon": "mdi:lightning-bolt",
+         "secondary": "{{ states('sensor.linky_teleinfo_linky_w_instantane')|float(0)|round(0)|int }} W",
+         "color": "{% set p = states('sensor.linky_teleinfo_linky_w_instantane')|float(0) %}{{ 'disabled' if p < 5 else ('orange' if p < 500 else 'red') }}",
+         "tap_action": {
+          "action": "more-info"
+         },
+         "hold_action": {
+          "action": "none"
+         },
+         "uix": {
+          "style": "ha-card {backdrop-filter: none; background: transparent; box-shadow: none; border: none;}"
+         }
+        },
+        {
+         "type": "custom:statistics-graph-chart-card",
+         "styles": "ha-card {background: transparent; box-shadow: none; border: none;}\n.sgc-plot-wrap { margin: -20px -20px -24px -20px; }\nha-card {margin-top: -20px;}",
+         "show_now_line": false,
+         "show_grid": false,
+         "show_y_axis": false,
+         "show_x_axis": false,
+         "show_legend": false,
+         "animate_graph": false,
+         "hours_to_show": 24,
+         "points_per_hour": 12,
+         "height": 89,
+         "line_width": 2,
+         "entities": [
+          {
+           "entity": "sensor.linky_teleinfo_linky_w_instantane",
+           "name": "Domotique",
+           "show_state": false,
+           "hide_name": true,
+           "show_color_dot": false,
+           "show_trend_icon": false,
+           "line_width": 2,
+           "color_thresholds": {
+            "enabled": true,
+            "direction": "vertical",
+            "values": [
+             {
+              "value": 0,
+              "color": "#4a90d9"
+             },
+             {
+              "value": 1000,
+              "color": "#4a90d9"
+             },
+             {
+              "value": 1700,
+              "color": "#ff9800"
+             },
+             {
+              "value": 2500,
+              "color": "#ff3333"
+             }
+            ]
+           }
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "type": "custom:stack-in-card",
+       "mode": "vertical",
+       "keep": {
+        "border_radius": true,
+        "margin": true
+       },
+       "grid_options": {
+        "columns": 6
+       },
+       "cards": [
+        {
+         "type": "custom:mushroom-template-card",
+         "entity": "sensor.linky_teleinfo_linky_w_instantane",
+         "primary": "Bureau",
+         "icon": "mdi:lightning-bolt",
+         "secondary": "{{ states('sensor.linky_teleinfo_linky_w_instantane')|float(0)|round(0)|int }} W",
+         "color": "{% set p = states('sensor.linky_teleinfo_linky_w_instantane')|float(0) %}{{ 'disabled' if p < 5 else ('orange' if p < 500 else 'red') }}",
+         "tap_action": {
+          "action": "more-info"
+         },
+         "hold_action": {
+          "action": "none"
+         },
+         "uix": {
+          "style": "ha-card {backdrop-filter: none; background: transparent; box-shadow: none; border: none;}"
+         }
+        },
+        {
+         "type": "custom:statistics-graph-chart-card",
+         "styles": "ha-card {background: transparent; box-shadow: none; border: none;}\n.sgc-plot-wrap { margin: -20px -20px -24px -20px; }\nha-card {margin-top: -20px;}",
+         "show_now_line": false,
+         "show_grid": false,
+         "show_y_axis": false,
+         "show_x_axis": false,
+         "show_legend": false,
+         "animate_graph": false,
+         "hours_to_show": 24,
+         "points_per_hour": 12,
+         "height": 89,
+         "line_width": 2,
+         "entities": [
+          {
+           "entity": "sensor.linky_teleinfo_linky_w_instantane",
+           "name": "Bureau",
+           "show_state": false,
+           "hide_name": true,
+           "show_color_dot": false,
+           "show_trend_icon": false,
+           "line_width": 2,
+           "color_thresholds": {
+            "enabled": true,
+            "direction": "vertical",
+            "values": [
+             {
+              "value": 0,
+              "color": "#4a90d9"
+             },
+             {
+              "value": 1000,
+              "color": "#4a90d9"
+             },
+             {
+              "value": 1700,
+              "color": "#ff9800"
+             },
+             {
+              "value": 2500,
+              "color": "#ff3333"
+             }
+            ]
+           }
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "type": "markdown",
+       "content": "**Markdown**&nbsp;&nbsp;&nbsp;avec espaces&nbsp;insécables\n\nTempérature :&nbsp;{{ states('sensor.maison_temperature_moyenne') }}&nbsp;°C &#9728;"
+      }
+     ]
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Grands graphs"
+      },
+      {
+       "type": "custom:statistics-graph-chart-card",
+       "card_header": "Production Solaire / Jour",
+       "styles": ".sgc-plot-wrap {\n  margin: -20px -20px -24px -20px;\n}",
+       "card_icon": "mdi:solar-power",
+       "card_icon_size": "30px",
+       "card_icon_color": "#ffcc00",
+       "show_grid": false,
+       "show_y_axis": false,
+       "show_x_axis": false,
+       "points_per_hour": 12,
+       "height": 200,
+       "entities": [
+        {
+         "entity": "sensor.linky_teleinfo_linky_w_instantane",
+         "name": "Production solaire",
+         "state_size": "32px",
+         "color_thresholds": {
+          "enabled": true,
+          "direction": "vertical",
+          "values": [
+           {
+            "value": 0,
+            "color": "#ffffff"
+           },
+           {
+            "value": 1500,
+            "color": "#ffff00"
+           },
+           {
+            "value": 3000,
+            "color": "#ff8800"
+           }
+          ]
+         },
+         "state_adaptive_color": true,
+         "line_width": 2,
+         "show_color_dot": false,
+         "show_trend_icon": false,
+         "hide_name": false,
+         "name_position": "below",
+         "decimals": 0
+        },
+        {
+         "entity": "sensor.prod_kwh",
+         "name": "Total Journalier",
+         "color": "#8a8a8a",
+         "state_size": "30px",
+         "show_trend_icon": false,
+         "show_graph": false,
+         "align_state": "right",
+         "legend_stats": [
+          "min",
+          "max"
+         ],
+         "hide_name": false,
+         "name_position": "below",
+         "show_color_dot": false
+        }
+       ]
+      },
+      {
+       "type": "custom:stack-in-card",
+       "mode": "vertical",
+       "cards": [
+        {
+         "type": "custom:statistics-graph-chart-card",
+         "card_header": "EDF kW Instantané /  kW Jour",
+         "styles": ".sgc-plot-wrap {\n  margin: -20px -20px -24px -20px;\n}",
+         "card_icon": "mdi:lightning-bolt",
+         "card_icon_size": "30px",
+         "card_icon_color": "#ff9800",
+         "show_grid": false,
+         "show_y_axis": false,
+         "show_x_axis": false,
+         "points_per_hour": 12,
+         "height": 244,
+         "entities": [
+          {
+           "entity": "sensor.linky_teleinfo_linky_w_instantane",
+           "name": "Production solaire",
+           "state_size": "32px",
+           "color_thresholds": {
+            "enabled": true,
+            "direction": "vertical",
+            "values": [
+             {
+              "value": 0,
+              "color": "#ffffff"
+             },
+             {
+              "value": 1000,
+              "color": "#4a90d9"
+             },
+             {
+              "value": 1800,
+              "color": "#ff9800"
+             },
+             {
+              "value": 2600,
+              "color": "#ff3333"
+             },
+             {
+              "value": 3400,
+              "color": "#b000ff"
+             }
+            ]
+           },
+           "state_adaptive_color": true,
+           "line_width": 2,
+           "show_color_dot": false,
+           "show_trend_icon": false,
+           "hide_name": false,
+           "name_position": "below",
+           "decimals": 0
+          },
+          {
+           "entity": "sensor.prod_kwh",
+           "name": "Total Journalier",
+           "color": "#8a8a8a",
+           "state_size": "30px",
+           "show_trend_icon": false,
+           "show_graph": false,
+           "align_state": "right",
+           "legend_stats": [
+            "min",
+            "max"
+           ],
+           "hide_name": false,
+           "name_position": "below",
+           "show_color_dot": false
+          }
+         ]
+        },
+        {
+         "type": "horizontal-stack",
+         "cards": [
+          {
+           "type": "custom:mushroom-entity-card",
+           "entity": "sensor.linky_teleinfo_linky_w_instantane",
+           "name": "Max Hier",
+           "layout": "vertical",
+           "icon_color": "blue-grey",
+           "icon": "mdi:lightning-bolt-outline"
+          },
+          {
+           "type": "gauge",
+           "entity": "sensor.environnement_pression",
+           "min": 950,
+           "max": 1050,
+           "needle": true,
+           "severity": {
+            "green": 980,
+            "yellow": 1010,
+            "red": 1030
+           },
+           "name": "Tension"
+          },
+          {
+           "type": "gauge",
+           "entity": "sensor.jardin_th_exterieur_humidite",
+           "max": 100,
+           "needle": true,
+           "severity": {
+            "green": 0,
+            "yellow": 40,
+            "red": 80
+           },
+           "name": "Courant"
+          },
+          {
+           "type": "custom:mushroom-entity-card",
+           "entity": "sensor.linky_teleinfo_linky_w_instantane",
+           "name": "Max Jour",
+           "layout": "vertical",
+           "icon_color": "light-blue",
+           "icon": "mdi:lightning-bolt"
+          }
+         ]
+        }
+       ]
+      },
+      {
+       "type": "custom:statistics-graph-chart-card",
+       "card_header": "Extérieur",
+       "card_header_color": "#bdbdbd",
+       "styles": ".sgc-plot-wrap {\n    margin: 0 -20px -24px -20px;\n}\n.sgc-state-align-center {\n      margin: -34px -120px 0 0;\n    font-weight: 300 !important;\n}\n.sgc-state-value {\n    font-weight: 300 !important;\n}\n.sgc-state-wrap .sgc-state-align-left {\n    margin-top: -12px;\n}",
+       "show_now_line": false,
+       "show_y_axis": false,
+       "show_x_axis": false,
+       "points_per_hour": 1,
+       "height": 100,
+       "entities": [
+        {
+         "entity": "sensor.environnement_pression",
+         "name": "Baromètre",
+         "state_size": "20px",
+         "hide_name": true,
+         "show_color_dot": false,
+         "decimals": 0,
+         "align_state": "center",
+         "show_fill": true,
+         "line_width": 2,
+         "state_adaptive_color": true,
+         "y_axis": "independent",
+         "color": "#ff4757"
+        },
+        {
+         "entity": "sensor.jardin_th_exterieur_humidite",
+         "color": "#378ADD",
+         "hide_name": true,
+         "state_size": "30px",
+         "state_adaptive_color": true,
+         "y_axis": "secondary",
+         "line_width": 3,
+         "show_color_dot": false,
+         "align_state": "right",
+         "color_thresholds": {
+          "enabled": false,
+          "values": []
+         },
+         "decimals": 0
+        },
+        {
+         "entity": "sensor.jardin_th_exterieur_temperature",
+         "name": "Température",
+         "state_size": "40px",
+         "color_thresholds": {
+          "enabled": true,
+          "values": [
+           {
+            "value": -10,
+            "color": "#c200c2"
+           },
+           {
+            "value": 0,
+            "color": "#FFAAFF"
+           },
+           {
+            "value": 10,
+            "color": "#FFFFFF"
+           },
+           {
+            "value": 20,
+            "color": "#00FF50"
+           },
+           {
+            "value": 30,
+            "color": "#FFAA00"
+           },
+           {
+            "value": 35,
+            "color": "#FF5050"
+           },
+           {
+            "value": 40,
+            "color": "#FF0050"
+           }
+          ],
+          "direction": "vertical"
+         },
+         "hide_name": true,
+         "show_color_dot": false,
+         "state_adaptive_color": true,
+         "line_width": 2,
+         "color": "#00FF50"
+        }
+       ],
+       "grid_options": {
+        "columns": 6,
+        "rows": "auto"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

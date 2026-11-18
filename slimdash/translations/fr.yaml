@@ -1,0 +1,68 @@
+configuration:
+  dashboards:
+    name: Dashboards publiés
+    description: >-
+      Un élément par appareil (tablette, liseuse…). La page s'ouvre à l'adresse
+      http://IP:8099/nom. La page http://IP:8099/diag montre ce que chaque appareil annonce.
+    fields:
+      name:
+        name: Nom
+        description: >-
+          Nom court qui sert d'adresse : http://IP:8099/nom. Lettres, chiffres,
+          - ou _ (ex. tablette, kindle). Majuscules et minuscules sont équivalentes.
+      dashboard:
+        name: Dashboard Home Assistant
+        description: >-
+          Adresse du dashboard dans Home Assistant, telle qu'elle apparaît dans l'URL
+          (ex. lovelace, dashboard-maison).
+      views:
+        name: Vues
+        description: >-
+          Numéros des vues à afficher, séparés par des virgules (0 = première vue),
+          ex. 0,2,4. Vide = première vue. Chaque vue devient un onglet.
+      tabs_bottom:
+        name: Onglets en bas
+        description: >-
+          Activé : la ligne des onglets (avec le voyant de connexion) est en bas de
+          l'écran. Désactivé : en haut.
+      refresh:
+        name: Actualisation (secondes)
+        description: >-
+          0 = temps réel (recommandé pour tablettes et téléphones). Sinon, la page se
+          recharge toutes les N secondes (5 à 3600), ex. 60 à 300 pour une liseuse Kindle.
+      device:
+        name: Type d'appareil
+        description: >-
+          auto = détecté d'après le navigateur (recommandé). Sinon : type 1 (Android 4.4,
+          iOS 7-9), type 2 (navigateurs 2016-2019) ou type 3 (navigateurs récents).
+      theme:
+        name: Thème
+        description: >-
+          view (par défaut) = le thème choisi dans chaque vue du dashboard (Modifier la vue >
+          Thème) ; une vue sans thème prend le thème par défaut de Home Assistant.
+          ha light / ha dark = thème par défaut de Home Assistant, clair ou sombre,
+          pour toutes les vues.
+  allowed_networks:
+    name: Réseaux autorisés
+    description: >-
+      Adresses ou sous-réseaux qui peuvent ouvrir les pages (ex. 192.168.1.42/32
+      pour la tablette seule). Liste vide = tout le monde.
+  log_level:
+    name: Niveau de journalisation
+    description: >-
+      Quantité de messages dans le journal de l'app : debug (tout, pour chercher
+      un problème), info (normal) ou warning (avertissements et erreurs seulement).
+  access_key:
+    name: Clé d'accès
+    description: >-
+      Facultatif. Si renseignée, la page s'ouvre avec http://IP:8099/nom?k=VOTRE_CLE
+      (mémorisée ensuite par un cookie).
+  frigate_url:
+    name: Adresse de Frigate (facultatif)
+    description: >-
+      Laisser vide : SlimDash prend l'adresse de l'intégration Frigate de Home Assistant
+      (add-on, LXC ou VM). À remplir seulement pour la remplacer, ex. http://192.168.1.20:5000
+      (port 5000, API interne sans authentification). Sans Frigate, les caméras passent par
+      Home Assistant (une image par seconde).
+network:
+  8099/tcp: Page SlimDash

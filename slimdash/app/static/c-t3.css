@@ -1,0 +1,36 @@
+/* SlimDash - type 3 (navigateurs recents), chargee apres c-inter.css : grilles CSS, transitions. Pas de gap sur les rangees flexbox (absent de Chrome 80-83 et Safari 13-14.0). */
+
+/* ===== Base, bandeau, onglets, grille des cartes ===== */
+#main > .card, #main > .hd, #main > .badges { grid-column: 1 / -1; }
+.sect { display: grid; gap: 8px; margin: 0; grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: start; margin-right: 0; }
+.sect > .card, .sect > .vs, .sect > .grid, .sect > .cond { margin: 0; }
+.sect > .w3 { grid-column: span 3; width: auto; margin: 0; }
+.sect > .w4 { grid-column: span 4; }
+.sect > .w6 { grid-column: span 6; }
+.sect > .w4, .sect > .w6 { width: auto; margin: 0; }
+.sect > .w9 { grid-column: span 9; width: auto; margin: 0; }
+#main.cols2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(344px, 1fr)); column-gap: 8px; padding-right: 16px; row-gap: 8px; align-items: start; overflow: visible; }
+#main.cols2 .sect.c0, #main.cols2 .sect.c1 { float: none; clear: none; width: auto; }
+@media (min-width: 684px) and (max-width: 1215px) { #main.cols2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1216px) { #main.cols2 { max-width: 1564px; } }
+/* section sur plusieurs colonnes (column_span) : toute la largeur ; 2 ou 3 colonnes seulement
+   quand la grille en a au moins 3 (dès 1216 px) */
+#main.cols2 .sect.sp2, #main.cols2 .sect.sp3, #main.cols2 .sect.sp4 { grid-column: 1 / -1; }
+@media (min-width: 1216px) {
+  #main.cols2 .sect.sp2 { grid-column: span 2; }
+  #main.cols2 .sect.sp3 { grid-column: span 3; }
+}
+.sect > * { grid-column: 1 / -1; margin-right: 0; }
+.hs, .sect > .hs { gap: 0; width: auto; margin: 0 -4px; }
+.hs > .card, .hs > div { margin: 0 4px; }
+
+/* ===== Lignes (carte entities), boutons, interrupteurs ===== */
+.tg, .tg i, .btn { transition: background-color .25s, color .25s, left .2s, width .4s; }
+.btn:active { transform: scale(.98); }
+
+/* ===== Tuiles et boutons ===== */
+.tile { transition: background-color .25s, color .25s, left .2s, width .4s; }
+.tile:active { transform: scale(.98); }
+
+/* ===== Valeurs : sensor, jauge, glance ===== */
+.bar i { transition: background-color .25s, color .25s, left .2s, width .4s; }

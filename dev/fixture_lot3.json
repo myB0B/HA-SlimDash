@@ -1,0 +1,239 @@
+{
+ "views": [
+  {
+   "type": "sections",
+   "title": "Lot 3",
+   "sections": [
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "custom:digital-clock",
+       "padding": "4px 10px",
+       "firstLineFormat": "HH:mm",
+       "secondLineFormat": "cccc d LLLL yyyy",
+       "firstLineLayout": {
+        "textAlign": "center",
+        "lineHeight": "1.25em",
+        "fontSize": "4em",
+        "fontWeight": 400
+       },
+       "secondLineLayout": {
+        "textAlign": "center",
+        "lineHeight": "1.25em",
+        "fontSize": "2.5em",
+        "fontWeight": 300
+       }
+      },
+      {
+       "type": "custom:digital-clock"
+      },
+      {
+       "type": "custom:statistics-graph-chart-card",
+       "card_header": "Extérieur",
+       "card_header_color": "#bdbdbd",
+       "styles": ".sgc-plot-wrap {\n    margin: 0 -20px -24px -20px;\n}\n.sgc-state-align-center {\n      margin: -34px -120px 0 0;\n    font-weight: 300 !important;\n}\n.sgc-state-value {\n    font-weight: 300 !important;\n}\n.sgc-state-wrap .sgc-state-align-left {\n    margin-top: -12px;\n}",
+       "points_per_hour": 1,
+       "height": 100,
+       "entities": [
+        {
+         "entity": "sensor.environnement_pression",
+         "name": "Baromètre",
+         "state_size": "20px",
+         "hide_name": true,
+         "graph_type": "bar",
+         "decimals": 0,
+         "align_state": "center",
+         "show_line": false,
+         "state_adaptive_color": true,
+         "color": "#ff4757",
+         "points_per_hour": 1
+        },
+        {
+         "entity": "sensor.jardin_th_exterieur_humidite",
+         "color": "#378ADD",
+         "hide_name": true,
+         "state_size": "30px",
+         "state_adaptive_color": true,
+         "align_state": "right",
+         "decimals": 0
+        },
+        {
+         "entity": "sensor.jardin_th_exterieur_temperature",
+         "name": "Température",
+         "state_size": "40px",
+         "color_thresholds": {
+          "enabled": true,
+          "values": [
+           {
+            "value": -10,
+            "color": "#c200c2"
+           },
+           {
+            "value": 0,
+            "color": "#FFAAFF"
+           },
+           {
+            "value": 10,
+            "color": "#FFFFFF"
+           },
+           {
+            "value": 20,
+            "color": "#00FF50"
+           },
+           {
+            "value": 30,
+            "color": "#FFAA00"
+           },
+           {
+            "value": 35,
+            "color": "#FF5050"
+           },
+           {
+            "value": 40,
+            "color": "#FF0050"
+           }
+          ]
+         },
+         "hide_name": true,
+         "state_adaptive_color": true,
+         "color": "#00FF50"
+        }
+       ],
+       "grid_options": {
+        "columns": 6,
+        "rows": "auto"
+       }
+      },
+      {
+       "type": "custom:statistics-graph-chart-card",
+       "card_header": "Intérieur",
+       "card_header_color": "#bdbdbd",
+       "height": 100,
+       "entities": [
+        {
+         "entity": "sensor.maison_humidite_moyenne",
+         "color": "#378ADD",
+         "hide_name": true,
+         "state_size": "30px",
+         "state_adaptive_color": true,
+         "align_state": "right",
+         "decimals": 0
+        },
+        {
+         "entity": "sensor.maison_temperature_moyenne",
+         "state_size": "40px",
+         "hide_name": true,
+         "state_adaptive_color": true,
+         "color": "#00FF50"
+        }
+       ],
+       "grid_options": {
+        "columns": 6,
+        "rows": "auto"
+       },
+       "styles": ".sgc-plot-wrap {\n    margin: 0 -20px -24px -20px;\n}\n.sgc-state-value {\n    font-weight: 300 !important;\n}\n.sgc-state-wrap .sgc-state-align-left {\n    margin-top: -12px;\n}"
+      },
+      {
+       "type": "custom:statistics-graph-chart-card",
+       "card_header": "Extérieur (carte perso)",
+       "entities": [
+        {
+         "entity": "sensor.jardin_th_exterieur_temperature",
+         "name": "Température",
+         "color": "#00FF50"
+        },
+        {
+         "entity": "sensor.jardin_th_exterieur_humidite",
+         "name": "Humidité",
+         "color": "#378ADD"
+        }
+       ]
+      },
+      {
+       "type": "custom:statistics-graph-chart-card",
+       "card_header": "Baromètre",
+       "card_header_color": "#bdbdbd",
+       "height": 120,
+       "points_per_hour": 0.5,
+       "entities": [
+        {
+         "entity": "sensor.environnement_pression",
+         "state_size": "50px",
+         "hide_name": true,
+         "graph_type": "bar",
+         "decimals": 0
+        }
+       ]
+      },
+      {
+       "type": "tile",
+       "features_position": "inline",
+       "vertical": false,
+       "entity": "sensor.jardin_th_exterieur_temperature",
+       "icon": "mdi:thermometer",
+       "features": [
+        {
+         "type": "trend-graph"
+        }
+       ]
+      },
+      {
+       "type": "tile",
+       "entity": "sensor.maison_temperature_moyenne",
+       "features": [
+        {
+         "type": "trend-graph"
+        }
+       ]
+      },
+      {
+       "type": "custom:bubble-card",
+       "card_type": "button",
+       "entity": "input_boolean.slimdash_demo_prise",
+       "name": "Bubble prise",
+       "icon": "mdi:power",
+       "show_state": true,
+       "sub_button": [
+        {
+         "entity": "sensor.linky_teleinfo_linky_w_instantane",
+         "icon": "mdi:lightning-bolt"
+        },
+        {
+         "entity": "sensor.maison_temperature_moyenne",
+         "icon": "mdi:thermometer",
+         "show_state": true
+        }
+       ]
+      },
+      {
+       "type": "custom:mushroom-chips-card",
+       "chips": [
+        {
+         "type": "entity",
+         "entity": "sensor.izypower_cloud_maison_32028_puissance_pv"
+        },
+        {
+         "type": "template",
+         "icon": "mdi:home",
+         "content": "Maison {{ states('sensor.maison_temperature_moyenne') }} °C"
+        },
+        {
+         "type": "weather",
+         "entity": "weather.home"
+        },
+        {
+         "type": "weather",
+         "entity": "weather.home",
+         "show_conditions": true,
+         "show_temperature": true
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "theme": "test"
+  }
+ ]
+}

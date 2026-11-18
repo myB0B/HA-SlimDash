@@ -1,0 +1,357 @@
+{
+ "title": "Maison",
+ "views": [
+  {
+   "title": "KINDLE",
+   "icon": "mdi:tablet-dashboard",
+   "background": {
+    "opacity": 30,
+    "alignment": "center",
+    "size": "cover",
+    "repeat": "repeat",
+    "attachment": "fixed"
+   },
+   "type": "sections",
+   "sections": [
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "custom:digital-clock",
+       "padding": "4px 10px",
+       "firstLineFormat": "HH:mm",
+       "secondLineFormat": "cccc d LLLL yyyy",
+       "firstLineLayout": {
+        "textAlign": "center",
+        "lineHeight": "1.25em",
+        "fontSize": "4em",
+        "fontWeight": 400
+       },
+       "secondLineLayout": {
+        "textAlign": "center",
+        "lineHeight": "1.25em",
+        "fontSize": "2.5em",
+        "fontWeight": 300
+       },
+       "card_mod": {
+        "style": ".second-line {\n  width: 100%;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n"
+       }
+      },
+      {
+       "show_current": true,
+       "show_forecast": true,
+       "type": "weather-forecast",
+       "entity": "weather.home",
+       "forecast_type": "daily"
+      },
+      {
+       "type": "custom:statistics-graph-chart-card",
+       "card_header": "Extérieur",
+       "card_header_color": "#bdbdbd",
+       "styles": ".sgc-plot-wrap {\n    margin: 0 -20px -24px -20px;\n}\n.sgc-state-align-center {\n      margin: -34px -120px 0 0;\n    font-weight: 300 !important;\n}\n.sgc-state-value {\n    font-weight: 300 !important;\n}\n.sgc-state-wrap .sgc-state-align-left {\n    margin-top: -12px;\n}",
+       "show_now_line": false,
+       "show_tooltip_total": false,
+       "show_y_axis": false,
+       "show_x_axis": false,
+       "animate_graph": true,
+       "points_per_hour": 1,
+       "tooltip_match_axis": false,
+       "tooltip_order": "default",
+       "height": 100,
+       "update_interval": 300,
+       "x_grid_style": "dashed",
+       "y_grid_style": "dashed",
+       "entities": [
+        {
+         "entity": "sensor.environnement_pression",
+         "name": "Baromètre",
+         "state_size": "20px",
+         "hide_name": true,
+         "show_color_dot": false,
+         "tap_action": {
+          "action": "more-info"
+         },
+         "show_trend_icon": false,
+         "graph_type": "bar",
+         "show_extrema": "never",
+         "decimals": 0,
+         "align_state": "center",
+         "gradient": false,
+         "show_fill": false,
+         "line_width": 2,
+         "show_line": false,
+         "state_adaptive_color": true,
+         "auto_hide": false,
+         "y_axis": "independent",
+         "color": "#ff4757",
+         "points_per_hour": 1
+        },
+        {
+         "entity": "sensor.jardin_th_exterieur_humidite",
+         "color": "#378ADD",
+         "hide_name": true,
+         "state_size": "30px",
+         "state_adaptive_color": true,
+         "y_axis": "secondary",
+         "tap_action": {
+          "action": "more-info"
+         },
+         "line_width": 3,
+         "show_color_dot": false,
+         "align_state": "right",
+         "color_thresholds": {
+          "enabled": false,
+          "values": []
+         },
+         "show_trend_icon": false,
+         "rise_fall_colors": {
+          "enabled": false,
+          "increase": "#2ecc71",
+          "decrease": "#e74c3c",
+          "stable": "#95a5a6"
+         },
+         "decimals": 0,
+         "extrema_show_timestamp": false
+        },
+        {
+         "entity": "sensor.jardin_th_exterieur_temperature",
+         "name": "Température",
+         "state_size": "40px",
+         "color_thresholds": {
+          "enabled": true,
+          "values": [
+           {
+            "value": -10,
+            "color": "#c200c2"
+           },
+           {
+            "value": 0,
+            "color": "#FFAAFF"
+           },
+           {
+            "value": 10,
+            "color": "#FFFFFF"
+           },
+           {
+            "value": 20,
+            "color": "#00FF50"
+           },
+           {
+            "value": 30,
+            "color": "#FFAA00"
+           },
+           {
+            "value": 35,
+            "color": "#FF5050"
+           },
+           {
+            "value": 40,
+            "color": "#FF0050"
+           }
+          ],
+          "direction": "vertical"
+         },
+         "hide_name": true,
+         "show_color_dot": false,
+         "state_adaptive_color": true,
+         "tap_action": {
+          "action": "more-info"
+         },
+         "show_trend_icon": false,
+         "z_index": 1,
+         "extrema_show_timestamp": false,
+         "line_width": 2,
+         "color": "#00FF50"
+        }
+       ],
+       "grid_options": {
+        "columns": 6,
+        "rows": "auto"
+       }
+      },
+      {
+       "type": "custom:statistics-graph-chart-card",
+       "card_header": "Intérieur",
+       "card_header_color": "#bdbdbd",
+       "styles": ".sgc-plot-wrap {\n    margin: 0 -20px -24px -20px;\n}\n.sgc-state-value {\n    font-weight: 300 !important;\n}\n.sgc-state-wrap .sgc-state-align-left {\n    margin-top: -12px;\n}",
+       "show_tooltip_total": false,
+       "show_y_axis": false,
+       "show_x_axis": false,
+       "animate_graph": true,
+       "brush_zoom": false,
+       "points_per_hour": 1,
+       "tooltip_match_axis": false,
+       "tooltip_order": "default",
+       "height": 100,
+       "update_interval": 300,
+       "x_grid_style": "dashed",
+       "y_grid_style": "dashed",
+       "entities": [
+        {
+         "entity": "sensor.maison_temperature_moyenne",
+         "name": "Température",
+         "state_size": "40px",
+         "color_thresholds": {
+          "enabled": true,
+          "values": [
+           {
+            "value": -10,
+            "color": "#c200c2"
+           },
+           {
+            "value": 0,
+            "color": "#FFAAFF"
+           },
+           {
+            "value": 10,
+            "color": "#FFFFFF"
+           },
+           {
+            "value": 20,
+            "color": "#00FF50"
+           },
+           {
+            "value": 30,
+            "color": "#FFAA00"
+           },
+           {
+            "value": 35,
+            "color": "#FF5050"
+           },
+           {
+            "value": 40,
+            "color": "#FF0050"
+           }
+          ],
+          "direction": "vertical"
+         },
+         "hide_name": true,
+         "show_color_dot": false,
+         "state_adaptive_color": true,
+         "line_width": 3,
+         "tap_action": {
+          "action": "more-info"
+         },
+         "show_trend_icon": false,
+         "z_index": 1,
+         "extrema_show_timestamp": false,
+         "color": "#00FF50",
+         "point_colors": "#00FF50",
+         "icon_color": "#00FF50",
+         "state_color": "#00FF50"
+        },
+        {
+         "entity": "sensor.maison_humidite_moyenne",
+         "color": "#378ADD",
+         "hide_name": true,
+         "state_size": "30px",
+         "y_axis": "secondary",
+         "tap_action": {
+          "action": "more-info"
+         },
+         "align_state": "right",
+         "color_thresholds": {
+          "enabled": true,
+          "values": []
+         },
+         "show_trend_icon": false,
+         "rise_fall_colors": {
+          "enabled": false,
+          "increase": "#2ecc71",
+          "decrease": "#e74c3c",
+          "stable": "#95a5a6"
+         },
+         "show_color_dot": false,
+         "state_adaptive_color": true,
+         "decimals": 0,
+         "extrema_show_timestamp": false,
+         "line_width": 2
+        }
+       ],
+       "grid_options": {
+        "columns": 6,
+        "rows": "auto"
+       }
+      },
+      {
+       "type": "horizontal-stack",
+       "cards": [
+        {
+         "type": "gauge",
+         "entity": "sensor.izypower_cloud_maison_32028_puissance_pv",
+         "min": 0,
+         "max": 3050,
+         "name": "PRODUCTION",
+         "grid_options": {
+          "columns": 3,
+          "rows": "auto"
+         }
+        },
+        {
+         "show_name": true,
+         "show_icon": true,
+         "type": "button",
+         "entity": "sensor.portail_portail_etat",
+         "show_state": true,
+         "icon_height": "40px",
+         "name": {
+          "type": "device"
+         }
+        },
+        {
+         "type": "gauge",
+         "entity": "sensor.linky_teleinfo_linky_w_instantane",
+         "min": 0,
+         "max": 8000,
+         "name": "CONSOMMATION",
+         "grid_options": {
+          "columns": 3,
+          "rows": "auto"
+         }
+        }
+       ]
+      }
+     ],
+     "column_span": 1
+    },
+    {
+     "type": "grid",
+     "cards": [
+      {
+       "type": "heading",
+       "heading": "Test commandes"
+      },
+      {
+       "type": "tile",
+       "entity": "light.lampe_salon"
+      },
+      {
+       "type": "button",
+       "entity": "light.lampe_salon",
+       "name": "Bouton lampe"
+      },
+      {
+       "type": "entities",
+       "title": "Lumières",
+       "entities": [
+        "light.lampe_salon",
+        {
+         "type": "divider"
+        },
+        "sensor.portail_portail_etat"
+       ]
+      },
+      {
+       "type": "markdown",
+       "content": "## Note\nValeur : {{ states('sensor.x') }}"
+      }
+     ]
+    }
+   ],
+   "max_columns": 1,
+   "dense_section_placement": false,
+   "cards": [],
+   "path": "kindle"
+  }
+ ]
+}
