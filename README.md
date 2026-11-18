@@ -125,3 +125,13 @@ The script starts the fake Home Assistant, SlimDash and a headless Edge or Chrom
 then compares the position, size, font and colors of every element, for all test views and
 the three types, with the reference in `dev/snapshots/`. After an intended rendering change:
 `python dev/snapshot.py save`.
+
+## License
+
+SlimDash is free to use, study and modify for personal and other noncommercial purposes, under the
+[PolyForm Noncommercial License 1.0.0](LICENSE). You may not sell it, or use it in a commercial
+product or service. The source is public, but this is not an « open source » license in the strict
+sense, because commercial use is excluded.
+
+Third-party material: the Roboto font (SIL Open Font License 1.1, see `slimdash/app/fonts/OFL.txt`)
+and the Material Design Icons by Pictogrammers (Apache License 2.0).
