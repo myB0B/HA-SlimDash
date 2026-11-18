@@ -133,5 +133,10 @@ SlimDash is free to use, study and modify for personal and other noncommercial p
 product or service. The source is public, but this is not an « open source » license in the strict
 sense, because commercial use is excluded.
 
+Home automation integrators: installing, configuring and supporting SlimDash for a customer, as part
+of a paid service, is allowed under the conditions of
+[ADDITIONAL-PERMISSION.md](ADDITIONAL-PERMISSION.md). Selling, reselling or bundling SlimDash
+itself is not. For any other commercial use, ask first.
+
 Third-party material: the Roboto font (SIL Open Font License 1.1, see `slimdash/app/fonts/OFL.txt`)
 and the Material Design Icons by Pictogrammers (Apache License 2.0).
