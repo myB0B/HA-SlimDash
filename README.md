@@ -128,15 +128,17 @@ the three types, with the reference in `dev/snapshots/`. After an intended rende
 
 ## License
 
-SlimDash is free to use, study and modify for personal and other noncommercial purposes, under the
-[PolyForm Noncommercial License 1.0.0](LICENSE). You may not sell it, or use it in a commercial
-product or service. The source is public, but this is not an « open source » license in the strict
-sense, because commercial use is excluded.
+SlimDash is free software, under the [GNU Affero General Public License v3.0](LICENSE) or any later
+version. Copyright (C) 2026 myB0B.
 
-Home automation integrators: installing, configuring and supporting SlimDash for a customer, as part
-of a paid service, is allowed under the conditions of
-[ADDITIONAL-PERMISSION.md](ADDITIONAL-PERMISSION.md). Selling, reselling or bundling SlimDash
-itself is not. For any other commercial use, ask first.
+You may use, study, modify and share it. If you share it (or a modified version), you must keep this
+same license and give the source of your changes, including when it is offered to others as a
+network service. It cannot be turned into a closed, proprietary product.
+
+**No warranty, no liability.** SlimDash is provided « as is »: see sections 15 and 16 of the
+license. Running old, unsupported devices on a network has real risks (overheating batteries,
+unpatched security flaws, see the Warning in the [documentation](slimdash/DOCS.md)); how you use it
+is your own responsibility.
 
 Third-party material: the Roboto font (SIL Open Font License 1.1, see `slimdash/app/fonts/OFL.txt`)
 and the Material Design Icons by Pictogrammers (Apache License 2.0).
