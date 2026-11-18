@@ -1,4 +1,4 @@
-# HA-SlimDash 0.8.68
+# HA-SlimDash 0.8.69
 
 ![SlimDash](docs/banner.jpg)
 
@@ -60,7 +60,30 @@ Custom cards (Mushroom, Bubble Card, button-card…) are rendered from their mai
 (entity, name, icon, color, layout, tap action). Advanced styling and scripted options are
 ignored on purpose: the goal is to stay simple and light on old devices.
 
-## Installation (local app)
+## Installation (beta)
+
+SlimDash is not in the official app store yet. During the beta, add it as a **custom repository**.
+It needs Home Assistant OS or Supervised (apps are not available with the Container and Core
+installation types).
+
+[![Add the SlimDash repository to my Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FmyB0B%2FHA-SlimDash)
+
+The button opens your Home Assistant with the address already filled in. Or by hand:
+
+1. **Settings → Apps → Install app** (the app store), menu ⋮ (top right) → **Repositories**.
+2. Paste `https://github.com/myB0B/HA-SlimDash`, then **Add** and **Close**.
+3. Refresh the page, open **SlimDash** (in the new repository section) and **Install**. The first
+   installation builds the image on your device: allow a few minutes and an Internet connection.
+   Then **Start**.
+4. Configure the published dashboards in the **Configuration** tab (see
+   [slimdash/DOCS.md](slimdash/DOCS.md)).
+5. On the device: `http://HA_IP:8099/<name>` (e.g. `http://192.168.1.10:8099/kitchen`).
+
+To update: **Settings → Apps → App store**, menu ⋮ → **Check for updates**, then open SlimDash and
+**Update**. This is a beta: please report problems and ideas in the
+[GitHub issues](https://github.com/myB0B/HA-SlimDash/issues).
+
+### Local app (development)
 
 1. Copy the `slimdash/` folder to the Home Assistant `addons` share (Samba:
    `\\HA_IP\addons\slimdash`).

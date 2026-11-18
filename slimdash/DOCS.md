@@ -26,6 +26,20 @@ browser.
 
 *SlimDash on a Samsung Galaxy Tab 3 tablet (Android 4.4 stock browser).*
 
+## Installation (beta)
+
+SlimDash is not in the official app store yet: during the beta, add it as a custom repository
+(Home Assistant OS or Supervised only).
+
+1. **Settings → Apps → Install app**, menu ⋮ (top right) → **Repositories**.
+2. Paste `https://github.com/myB0B/HA-SlimDash`, then **Add** and **Close**.
+3. Refresh the page, open **SlimDash** (in the new repository section) and **Install**. The first
+   installation builds the image on your device: allow a few minutes and an Internet connection.
+   Then **Start**.
+
+To update: menu ⋮ → **Check for updates**, then open SlimDash and **Update**. Please report
+problems and ideas in the [GitHub issues](https://github.com/myB0B/HA-SlimDash/issues).
+
 ## Quick start
 
 1. Install and start the app.
