@@ -31,7 +31,7 @@ needs, larger buttons, a light theme for an e-reader), each under its own addres
 
 User documentation (options, pages, cameras, supported cards): [slimdash/DOCS.md](slimdash/DOCS.md).
 Store description: [slimdash/README.md](slimdash/README.md).
-Changes by version: [slimdash/CHANGELOG.md](slimdash/CHANGELOG.md).
+Changes by version: [CHANGELOG.md](CHANGELOG.md).
 
 ## How it works
 
