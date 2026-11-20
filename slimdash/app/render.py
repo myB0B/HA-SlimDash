@@ -1,8 +1,8 @@
-"""SlimDash - conversion d'une configuration Lovelace en HTML simple.
+"""SlimDash - conversion of a Lovelace configuration into simple HTML.
 
-Le rendu produit du HTML statique + des "slots" : petits morceaux de la page
-(texte d'un état, classe on/off d'une tuile...) recalculés côté serveur quand
-une entité change, puis envoyés au navigateur sous forme de JSON minuscule.
+The rendering produces static HTML + "slots": small pieces of the page
+(text of a state, on/off class of a tile...) recomputed on the server when
+an entity changes, then sent to the browser as tiny JSON.
 """
 import hashlib
 import html
@@ -11,6 +11,7 @@ import re
 from datetime import datetime
 
 import colorsys
+import i18n
 import icons
 import math
 import theme
@@ -19,18 +20,18 @@ log = logging.getLogger("slimdash.render")
 
 E = html.escape
 
-# Domaines qu'un clic bascule (on/off) par défaut.
+# Domains toggled (on/off) by a click by default.
 TOGGLE_DOMAINS = {
     "light", "switch", "fan", "input_boolean", "automation", "siren",
     "humidifier", "group", "lock",
 }
-# Domaines que l'interrupteur d'en-tête d'une carte entities bascule (DOMAINS_TOGGLE de HA).
+# Domains toggled by the header switch of an entities card (HA DOMAINS_TOGGLE).
 HEADER_TOGGLE = ("fan", "input_boolean", "light", "switch", "group", "automation", "humidifier", "valve")
-# Lignes dont la valeur se modifie dans la carte entities (champ, liste, heure).
+# Rows whose value can be edited in the entities card (field, list, time).
 EDIT_DOMAINS = ("number", "input_number", "select", "input_select", "time", "input_datetime",
                 "text", "input_text", "date")
-RUN_DOMAINS = {"scene": "Activer", "script": "Exécuter", "button": "Appuyer",
-               "input_button": "Appuyer"}
+RUN_DOMAINS = {"scene": "Activate", "script": "Run", "button": "Press",
+               "input_button": "Press"}
 
 ON_STATES = {"on", "open", "opening", "unlocked", "playing", "home", "cleaning",
              "heat", "cool", "heat_cool", "auto", "dry", "fan_only", "active",
@@ -38,56 +39,56 @@ ON_STATES = {"on", "open", "opening", "unlocked", "playing", "home", "cleaning",
 OFF_STATES = {"off", "closed", "closing", "locked", "idle", "paused", "standby",
               "not_home", "docked", "below_horizon"}
 
-STATE_FR = {
-    "unavailable": "Indisponible", "unknown": "Inconnu",
-    "open": "Ouvert", "closed": "Fermé", "opening": "Ouverture",
-    "closing": "Fermeture", "locked": "Verrouillé", "unlocked": "Déverrouillé",
-    "locking": "Verrouillage", "unlocking": "Déverrouillage", "jammed": "Bloqué",
-    "playing": "Lecture", "paused": "Pause", "idle": "Inactif",
-    "standby": "Veille", "buffering": "Chargement",
-    "home": "Maison", "not_home": "Absent",
-    "docked": "À la base", "cleaning": "Nettoyage", "returning": "Retour base",
-    "error": "Erreur",
-    "heat": "Chauffage", "cool": "Climatisation", "heat_cool": "Auto",
-    "auto": "Auto", "dry": "Déshumidif.", "fan_only": "Ventilation",
-    "above_horizon": "Jour", "below_horizon": "Nuit",
-    "armed_away": "Armée (absent)", "armed_home": "Armée (présent)",
-    "armed_night": "Armée (nuit)", "disarmed": "Désarmée",
-    "triggered": "Déclenchée", "pending": "En attente", "arming": "Armement",
+# English fallback labels, used only when Home Assistant did not give its own (TR below).
+STATE_TXT = {
+    "unavailable": "Unavailable", "unknown": "Unknown",
+    "open": "Open", "closed": "Closed", "opening": "Opening",
+    "closing": "Closing", "locked": "Locked", "unlocked": "Unlocked",
+    "locking": "Locking", "unlocking": "Unlocking", "jammed": "Jammed",
+    "playing": "Playing", "paused": "Paused", "idle": "Idle",
+    "standby": "Standby", "buffering": "Buffering",
+    "home": "Home", "not_home": "Away",
+    "docked": "Docked", "cleaning": "Cleaning", "returning": "Returning to dock",
+    "error": "Error",
+    "heat": "Heat", "cool": "Cool", "heat_cool": "Heat/Cool",
+    "auto": "Auto", "dry": "Dry", "fan_only": "Fan only",
+    "above_horizon": "Day", "below_horizon": "Night",
+    "armed_away": "Armed away", "armed_home": "Armed home",
+    "armed_night": "Armed night", "disarmed": "Disarmed",
+    "triggered": "Triggered", "pending": "Pending", "arming": "Arming",
 }
 
-BINARY_FR = {
-    "motion": ("Mouvement", "Calme"), "occupancy": ("Détecté", "Libre"),
-    "presence": ("Présent", "Absent"), "door": ("Ouverte", "Fermée"),
-    "garage_door": ("Ouverte", "Fermée"), "window": ("Ouverte", "Fermée"),
-    "opening": ("Ouvert", "Fermé"), "moisture": ("Humide", "Sec"),
-    "smoke": ("Fumée !", "OK"), "gas": ("Gaz !", "OK"),
-    "problem": ("Problème", "OK"), "safety": ("Danger", "OK"),
-    "battery": ("Faible", "Normale"), "connectivity": ("Connecté", "Déconnecté"),
-    "plug": ("Branché", "Débranché"), "power": ("Sous tension", "Hors tension"),
-    "lock": ("Ouvert", "Verrouillé"), "running": ("En marche", "Arrêté"),
-    "light": ("Lumière", "Sombre"), "sound": ("Son", "Calme"),
-    "vibration": ("Vibration", "Calme"), "tamper": ("Sabotage", "OK"),
-    "update": ("Mise à jour", "À jour"), "heat": ("Chaud", "Normal"),
-    "cold": ("Froid", "Normal"),
+BINARY_TXT = {
+    "motion": ("Detected", "Clear"), "occupancy": ("Detected", "Clear"),
+    "presence": ("Home", "Away"), "door": ("Open", "Closed"),
+    "garage_door": ("Open", "Closed"), "window": ("Open", "Closed"),
+    "opening": ("Open", "Closed"), "moisture": ("Wet", "Dry"),
+    "smoke": ("Smoke!", "OK"), "gas": ("Gas!", "OK"),
+    "problem": ("Problem", "OK"), "safety": ("Unsafe", "Safe"),
+    "battery": ("Low", "Normal"), "connectivity": ("Connected", "Disconnected"),
+    "plug": ("Plugged in", "Unplugged"), "power": ("Power on", "Power off"),
+    "lock": ("Unlocked", "Locked"), "running": ("Running", "Not running"),
+    "light": ("Light", "No light"), "sound": ("Sound", "Clear"),
+    "vibration": ("Vibration", "Clear"), "tamper": ("Tampering", "OK"),
+    "update": ("Update available", "Up to date"), "heat": ("Hot", "Normal"),
+    "cold": ("Cold", "Normal"),
 }
 
-WEATHER_FR = {
-    "clear-night": "Nuit claire", "cloudy": "Nuageux", "fog": "Brouillard",
-    "hail": "Grêle", "lightning": "Orage", "lightning-rainy": "Orage pluvieux",
-    "partlycloudy": "Éclaircies", "pouring": "Averses", "rainy": "Pluie",
-    "snowy": "Neige", "snowy-rainy": "Pluie et neige", "sunny": "Soleil",
-    "windy": "Venteux", "windy-variant": "Venteux", "exceptional": "Exceptionnel",
+WEATHER_TXT = {
+    "clear-night": "Clear, night", "cloudy": "Cloudy", "fog": "Fog",
+    "hail": "Hail", "lightning": "Lightning", "lightning-rainy": "Lightning, rainy",
+    "partlycloudy": "Partly cloudy", "pouring": "Pouring", "rainy": "Rainy",
+    "snowy": "Snowy", "snowy-rainy": "Snowy, rainy", "sunny": "Sunny",
+    "windy": "Windy", "windy-variant": "Windy", "exceptional": "Exceptional",
 }
-DAYS_FR = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]
 
-# Libellés d'état de Home Assistant (« domaine.classe.état » -> texte), remplis par le
-# serveur à la connexion. Les tables ci-dessus ne servent plus que de secours.
+# Home Assistant state labels ("domain.class.state" -> text), filled by the
+# server on connection. The tables above are now only a fallback.
 TR = {}
 
 
 def tr_state(dom, device_class, s):
-    """Libellé HA d'un état (ex. switch on -> « Activé »), ou None."""
+    """HA label of a state (e.g. switch on -> "On"), or None."""
     if not TR or s is None:
         return None
     t = TR.get("%s.%s.%s" % (dom, device_class or "_", s))
@@ -97,7 +98,7 @@ def tr_state(dom, device_class, s):
 
 
 def weather_txt(s):
-    return tr_state("weather", None, s) or WEATHER_FR.get(s, s or "")
+    return tr_state("weather", None, s) or WEATHER_TXT.get(s, s or "")
 
 
 def domain_of(eid):
@@ -105,7 +106,7 @@ def domain_of(eid):
 
 
 def num(v):
-    """Nombre au format français (virgule), sinon None."""
+    """Number in the language of Home Assistant (decimal and thousands separators), else None."""
     try:
         f = float(v)
     except (TypeError, ValueError):
@@ -116,22 +117,12 @@ def num(v):
         s = str(int(f))
     else:
         s = str(v) if isinstance(v, str) else ("%g" % f)
-    return group(s.replace(".", ","))
+    return group(s)
 
 
 def group(numstr):
-    """« 1003,5 » -> « 1 003,5 » (espace fine insécable entre les milliers)."""
-    neg = numstr.startswith("-")
-    body = numstr[1:] if neg else numstr
-    ent, sep, dec = body.partition(",")
-    if len(ent) > 3 and ent.isdigit():
-        parts = []
-        while len(ent) > 3:
-            parts.insert(0, ent[-3:])
-            ent = ent[:-3]
-        parts.insert(0, ent)
-        ent = "\u202f".join(parts)
-    return ("-" if neg else "") + ent + sep + dec
+    """"1003.5" -> "1,003.5" / "1 003,5"... (see i18n.group_digits)."""
+    return i18n.group_digits(numstr)
 
 
 def round_num(v, decimals):
@@ -139,8 +130,7 @@ def round_num(v, decimals):
         f = float(v)
     except (TypeError, ValueError):
         return None
-    s = ("%." + str(int(decimals)) + "f") % f
-    return group(s.replace(".", ","))
+    return group(("%." + str(int(decimals)) + "f") % f)
 
 
 def fmt_time(iso):
@@ -151,11 +141,11 @@ def fmt_time(iso):
     now = datetime.now().astimezone()
     if dt.date() == now.date():
         return dt.strftime("%H:%M")
-    return dt.strftime("%d/%m %H:%M")
+    return i18n.date_short(dt) + " " + dt.strftime("%H:%M")
 
 
 def since(ts):
-    """Horodatage du dernier changement -> « depuis 14:32 » / « depuis le 12/11 »."""
+    """Timestamp of the last change -> "since 14:32" / "since 11/12"."""
     if not ts:
         return "—"
     try:
@@ -165,12 +155,12 @@ def since(ts):
         return "—"
     now = datetime.now().astimezone()
     if dt.date() == now.date():
-        return "depuis " + dt.strftime("%H:%M")
-    return "depuis le " + dt.strftime("%d/%m")
+        return i18n.D["st"] % dt.strftime("%H:%M")
+    return i18n.D["sd"] % i18n.date_short(dt)
 
 
 def ts_epoch(ts):
-    """Horodatage HA (nombre ou texte ISO) -> secondes depuis 1970, ou None."""
+    """HA timestamp (number or ISO text) -> seconds since 1970, or None."""
     if not ts:
         return None
     try:
@@ -181,60 +171,24 @@ def ts_epoch(ts):
         return None
 
 
-TOTAL_UNITS = (("seconde", "secondes"), ("minute", "minutes"), ("heure", "heures"),
-               ("jour", "jours"), ("semaine", "semaines"), ("mois", "mois"), ("an", "ans"))
-
-
-def rel_fr(t, now=None, total=False):
-    """Temps écoulé, comme HA en français : « Il y a 44 minutes », « Hier »…
-    total=True : durée seule, sans « il y a » (« 1 mois »), comme le format « total » de HA.
-    Même calcul que relFr() de s.js, qui le tient à jour."""
-    if t is None:
-        return "—"
-    import time as _t
-    s = max(0, int((now or _t.time()) - t))
-    if total:
-        for lim, div, u in ((45, 1, 0), (2700, 60, 1), (79200, 3600, 2), (432000, 86400, 3),
-                            (2419200, 604800, 4), (31536000, 2592000, 5), (None, 31536000, 6)):
-            if lim is None or s < lim:
-                n = max(1, int(round(s / float(div)))) if u else s
-                return "%d %s" % (n, TOTAL_UNITS[u][n > 1])
-    if s < 45:
-        txt = "maintenant" if s < 1 else "il y a %d seconde%s" % (s, "s" if s > 1 else "")
-    elif s < 2700:
-        m = max(1, int(round(s / 60.0)))
-        txt = "il y a %d minute%s" % (m, "s" if m > 1 else "")
-    elif s < 79200:
-        h = max(1, int(round(s / 3600.0)))
-        txt = "il y a %d heure%s" % (h, "s" if h > 1 else "")
-    elif s < 432000:
-        d = max(1, int(round(s / 86400.0)))
-        txt = {1: "hier", 2: "avant-hier"}.get(d, "il y a %d jours" % d)
-    elif s < 2419200:
-        w = max(1, int(round(s / 604800.0)))
-        txt = "la semaine dernière" if w == 1 else "il y a %d semaines" % w
-    elif s < 31536000:
-        m = max(1, int(round(s / 2592000.0)))
-        txt = "le mois dernier" if m == 1 else "il y a %d mois" % m
-    else:
-        y = max(1, int(round(s / 31536000.0)))
-        txt = "l’année dernière" if y == 1 else "il y a %d ans" % y
-    return txt[:1].upper() + txt[1:]
+def rel_time(t, now=None, total=False):
+    """Elapsed time (see i18n.rel_time); relTime() in s.js keeps it up to date."""
+    return i18n.rel_time(t, now, total)
 
 
 def rel_span(ts, total=False):
-    """Temps écoulé tenu à jour par s.js (classe ago, horodatage dans data-t ;
-    data-m="t" pour une durée sans « il y a »)."""
+    """Elapsed time kept up to date by s.js (class ago, timestamp in data-t;
+    data-m="t" for a duration without "il y a")."""
     t = ts_epoch(ts)
     if t is None:
         return "—"
     return '<span class="ago" data-t="%d"%s>%s</span>' % (
-        t, ' data-m="t"' if total else "", E(rel_fr(t, total=total)))
+        t, ' data-m="t"' if total else "", E(rel_time(t, total=total)))
 
 
 def ts_format(st, fmt=None):
-    """Format d'affichage d'un capteur horodaté, comme HA (None si ce n'en est pas un) :
-    « relative » pour un horodatage, « total » pour un temps de fonctionnement."""
+    """Display format of a timestamp sensor, like HA (None if it is not one):
+    "relative" for a timestamp, "total" for an operating time."""
     if not st or ts_epoch(st.get("s")) is None or not isinstance(st.get("s"), str) or "T" not in st["s"]:
         return None
     dc = (st.get("a") or {}).get("device_class")
@@ -246,7 +200,7 @@ def ts_format(st, fmt=None):
 
 
 def ts_html(st, fmt):
-    """Valeur HTML d'un capteur horodaté selon son format (voir ts_format)."""
+    """HTML value of a timestamp sensor according to its format (see ts_format)."""
     s = st.get("s")
     if fmt in ("relative", "total"):
         return rel_span(s, fmt == "total")
@@ -254,7 +208,8 @@ def ts_html(st, fmt):
         dt = datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone()
     except (ValueError, TypeError):
         return E(s)
-    return E(dt.strftime({"date": "%d/%m/%Y", "time": "%H:%M", "datetime": "%d/%m/%Y %H:%M"}[fmt]))
+    return E({"date": i18n.date_full(dt), "time": dt.strftime("%H:%M"),
+              "datetime": i18n.date_full(dt) + " " + dt.strftime("%H:%M")}[fmt])
 
 
 def cap(txt):
@@ -262,37 +217,37 @@ def cap(txt):
 
 
 def fmt_state(st, eid, decimals=None):
-    """Texte (non échappé) de l'état d'une entité, façon Home Assistant FR."""
+    """Text (not escaped) of the state of an entity, Home Assistant style."""
     if st is None:
         return "—"
     s = st.get("s")
     a = st.get("a") or {}
     dom = domain_of(eid)
     if s in ("unavailable", "unknown"):
-        return STATE_FR[s]
+        return STATE_TXT[s]
     t = tr_state(dom, a.get("device_class"), s)
     if dom == "light" and s == "on" and a.get("brightness") is not None:
-        try:        # comme HA : la luminosité remplace « Allumé »
+        try:        # like HA: the brightness replaces "On"
             return "%d %%" % round(int(a["brightness"]) * 100 / 255)
         except (TypeError, ValueError):
             pass
     if t is not None and dom not in ("weather", "climate", "cover"):
         return t
     if dom == "binary_sensor":
-        pair = BINARY_FR.get(a.get("device_class"), ("Activé", "Désactivé"))
+        pair = BINARY_TXT.get(a.get("device_class"), ("On", "Off"))
         return pair[0] if s == "on" else pair[1]
     if dom in ("light", "fan", "input_boolean", "siren", "humidifier"):
         if s == "on" and dom == "light" and a.get("brightness") is not None:
             try:
-                return "Allumé %d %%" % round(int(a["brightness"]) * 100 / 255)
+                return "On %d %%" % round(int(a["brightness"]) * 100 / 255)
             except (TypeError, ValueError):
                 pass
         if s == "on" and dom == "fan" and a.get("percentage"):
-            return "Marche %s %%" % a.get("percentage")
-        return {"on": "Allumé", "off": "Éteint"}.get(s, s)
+            return "On %s %%" % a.get("percentage")
+        return {"on": "On", "off": "Off"}.get(s, s)
     if dom in ("switch", "automation", "media_player", "group", "remote"):
         if s in ("on", "off"):
-            return {"on": "Marche", "off": "Arrêt"}[s]
+            return {"on": "On", "off": "Off"}[s]
     if dom == "weather":
         temp = a.get("temperature")
         txt = weather_txt(s)
@@ -301,22 +256,22 @@ def fmt_state(st, eid, decimals=None):
         return txt
     if dom == "climate":
         cur = a.get("current_temperature")
-        txt = t or (STATE_FR.get(s, s) if s != "off" else "Arrêt")
+        txt = t or (STATE_TXT.get(s, s) if s != "off" else "Off")
         if cur is not None:
             txt += " · %s °C" % (num(cur) or cur)
         return txt
     if dom == "cover" and a.get("current_position") is not None and s == "open":
-        return "%s %s %%" % (t or "Ouvert", a.get("current_position"))
+        return "%s %s %%" % (t or "Open", a.get("current_position"))
     if t is not None:
         return t
     tf = ts_format(st)
     if tf:
         t = ts_epoch(s)
-        return cap(rel_fr(t, total=tf == "total"))
+        return cap(rel_time(t, total=tf == "total"))
     if dom in ("input_datetime",) and "T" in str(s):
         return fmt_time(s)
-    if s in STATE_FR:
-        return STATE_FR[s]
+    if s in STATE_TXT:
+        return STATE_TXT[s]
     unit = a.get("unit_of_measurement")
     n = round_num(s, decimals) if decimals is not None else num(s)
     if n is not None:
@@ -325,7 +280,7 @@ def fmt_state(st, eid, decimals=None):
 
 
 def kelvin_rgb(k):
-    """Couleur d'un blanc de k kelvins (même formule que le frontend de HA)."""
+    """Colour of a white of k kelvins (same formula as the HA frontend)."""
     t = k / 100.0
     if t <= 66:
         r = 255.0
@@ -366,7 +321,7 @@ def entity_name(st, eid, cfg_name=None):
 
 
 def collect_entities(obj, out=None):
-    """Toutes les entity_id citées dans une config (récursif)."""
+    """All the entity_ids cited in a config (recursive)."""
     if out is None:
         out = set()
     if isinstance(obj, dict):
@@ -398,13 +353,13 @@ _ENT = re.compile(r"&amp;(#\d{1,7}|#[xX][0-9a-fA-F]{1,6}|[a-zA-Z][a-zA-Z0-9]{1,3
 
 
 def mini_markdown(text):
-    """Markdown très simple -> HTML sûr (titres, gras, italique, listes)."""
+    """Very simple Markdown -> safe HTML (headings, bold, italic, lists)."""
     text = re.sub(r"(?i)<br\s*/?>", "\n", str(text or ""))
     text = _TAG.sub("", text)
     out = []
     in_list = False
     for line in text.split("\n"):
-        # Entités HTML écrites dans le markdown (&nbsp;, &#9728;…) : rendues comme dans HA.
+        # HTML entities written in the markdown (&nbsp;, &#9728;...): rendered like in HA.
         ln = _ENT.sub(r"&\1;", E(line.strip()))
         m = re.match(r"^(#{1,6})\s*(.*)$", ln)
         li = re.match(r"^[-*+]\s+(.*)$", ln)
@@ -450,7 +405,7 @@ def nav_paths(obj, out=None):
 
 
 def find_view(views, ref):
-    """Index d'une vue : numéro (0 = première) ou chemin de la vue."""
+    """Index of a view: number (0 = first) or path of the view."""
     ref = str(ref).strip()
     if ref.isdigit() and int(ref) < len(views):
         return int(ref)
@@ -461,9 +416,9 @@ def find_view(views, ref):
 
 
 def select_views(config, refs):
-    """-> (vues choisies dans l'ordre demandé, vues à rendre).
+    """-> (views chosen in the requested order, views to render).
 
-    Les vues à rendre = vues choisies + celles qu'elles ouvrent (navigate).
+    Views to render = chosen views + those they open (navigate).
     """
     views = config.get("views") or []
     if not views:
@@ -472,7 +427,7 @@ def select_views(config, refs):
     for r in refs or []:
         i = find_view(views, r)
         if i is None:
-            log.warning("Vue introuvable : %s", r)
+            log.warning("View not found: %s", r)
         elif i not in chosen:
             chosen.append(i)
     if not chosen:
@@ -488,11 +443,11 @@ def select_views(config, refs):
 
 
 POINTS = {"t1": 48, "t2": 48, "t3": 96}
-HIST_POINTS = 96          # points calculés par le serveur (sous-échantillonnés ensuite)
-MAX_HOURS = 24 * 31       # limite des graphiques
+HIST_POINTS = 96          # points computed by the server (subsampled afterwards)
+MAX_HOURS = 24 * 31       # limit of the graphs
 HEX = re.compile(r"^#[0-9a-fA-F]{3,8}$")
 SERIES_COLORS = ["#4269d0", "#f4bd4a", "#ff725c", "#6cc5b0"]
-# Couleur par défaut d'une courbe selon ce qu'elle mesure (quand la carte n'en donne pas).
+# Default colour of a curve depending on what it measures (when the card gives none).
 TYPE_COLORS = {"temperature": "#43a047", "humidity": "#4fc3f7", "energy": "#c2479a",
                "pressure": "#e53935", "solar": "#fdd835"}
 _SOLAR = re.compile(r"solar|solaire|photovolt|\bpv\b|_pv_|_pv$|^pv_|panneau|onduleur|inverter|envoy|enphase", re.I)
@@ -502,7 +457,7 @@ MUSHROOM_COLORS = {"red", "pink", "purple", "deep-purple", "indigo", "blue", "li
                    "cyan", "teal", "green", "light-green", "lime", "yellow", "amber",
                    "orange", "deep-orange", "brown", "grey", "blue-grey", "black", "white",
                    "disabled", "primary", "accent"}
-# Entités sans état allumé/éteint : la couleur d'une carte (option color) s'applique toujours.
+# Entities without an on/off state: the colour of a card (colour option) always applies.
 STATELESS = {"button", "input_button", "scene", "script", "event"}
 SAFE_COLOR = re.compile(r"^(#[0-9a-fA-F]{3,8}|rgba?\([0-9\s.,%]+\)|[a-zA-Z]{3,20})$")
 
@@ -533,27 +488,27 @@ def fmt_num(v):
     s = ("%.1f" % v) if abs(v) < 100 else ("%.0f" % v)
     if s.endswith(".0"):
         s = s[:-2]
-    return s.replace(".", ",")
+    return s.replace(".", i18n.D["dec"])
 
 
 def spark_svg(series, h, labels=None, fill=True, pre="", gid="g"):
-    """Courbe(s) SVG ; chaque série a sa propre échelle (comme « y_axis: independent »).
-    Série = (valeurs, couleur[, seuils]) ; seuils = [(valeur, (r, g, b))] triés : la courbe
-    prend un dégradé vertical (couleur selon la hauteur), comme color_thresholds.
-    pre = dessin placé derrière les courbes (barres)."""
+    """SVG curve(s); each series has its own scale (like "y_axis: independent").
+    Series = (values, colour[, thresholds]); thresholds = [(value, (r, g, b))] sorted: the curve
+    gets a vertical gradient (colour depending on the height), like color_thresholds.
+    pre = drawing placed behind the curves (bars)."""
     W = 300.0
     parts = [pre] if pre else []
     for si, ser in enumerate(series):
         vals, color = ser[0], ser[1]
         stops = ser[2] if len(ser) > 2 else None
-        sfill = ser[3] if len(ser) > 3 else None     # remplissage propre à la série (show_fill)
+        sfill = ser[3] if len(ser) > 3 else None     # fill specific to the series (show_fill)
         pts = [v for v in vals if v is not None]
         if len(pts) < 2:
             continue
         lo, hi = min(pts), max(pts)
         rng = (hi - lo) or 1.0
         if stops:
-            # offset 0 = bas de la courbe (lo), 1 = haut (hi)
+            # offset 0 = bottom of the curve (lo), 1 = top (hi)
             gs, prev = [], None
             for v, rgb in stops:
                 off = (v - lo) / rng
@@ -602,7 +557,7 @@ def spark_svg(series, h, labels=None, fill=True, pre="", gid="g"):
 
 
 def bars_svg(vals, h, color, n):
-    """Histogramme : n barres (moyennes), échelle min-max, barre mini visible."""
+    """Histogram: n bars (averages), min-max scale, minimum bar visible."""
     rects = bar_rects(vals, h, n)
     if not rects:
         return '<div class="sp nodata">Pas encore d\'historique</div>'
@@ -636,7 +591,7 @@ def bar_rects(vals, h, n):
 
 
 def mix_color(stops, v):
-    """Couleur interpolée entre des seuils [(valeur, (r, g, b))] triés."""
+    """Colour interpolated between sorted thresholds [(value, (r, g, b))]."""
     if v <= stops[0][0]:
         c = stops[0][1]
     elif v >= stops[-1][0]:
@@ -671,13 +626,13 @@ def css_px(v, default, base=14.0):
 
 RAINBOW = "#f00 0%, #ff0 16.7%, #0f0 33.3%, #0ff 50%, #00f 66.7%, #f0f 83.3%, #f00 100%"
 
-# Domaines qui ont la fonctionnalité « toggle » des tuiles HA.
+# Domains that have the HA tiles "toggle" feature.
 TOGGLE_FEATURE = ("light", "switch", "fan", "input_boolean", "siren", "humidifier",
                   "water_heater", "climate", "media_player", "automation", "remote")
 
 def img_path(image, modern):
-    """image (carte picture, fond de vue) -> chemin HA (/local/…, /api/image/serve/…) ou URL http(s).
-    Image envoyée dans HA (media-source://image_upload/ID) : 512 px hors type 3, d'origine sinon."""
+    """image (picture card, view background) -> HA path (/local/..., /api/image/serve/...) or http(s) URL.
+    Image uploaded in HA (media-source://image_upload/ID): 512 px except on type 3, original otherwise."""
     if isinstance(image, dict):
         image = image.get("media_content_id")
     if not isinstance(image, str) or not image.strip() or "{" in image:
@@ -694,7 +649,7 @@ def img_path(image, modern):
 
 
 class Builder:
-    """Construit les vues HTML d'une type d'appareil et enregistre slots + actions."""
+    """Builds the HTML views of a device type and records slots + actions."""
 
     def __init__(self, store, dashboard_path, cls="t1"):
         self.store = store
@@ -704,15 +659,15 @@ class Builder:
         self.slots = []        # (deps, fn)
         self.actions = []      # dicts
         self.view_refs = {}    # path -> index
-        self.icons = set()     # icônes utilisées (sprite)
-        self.need_tpl = {}     # clé -> template Jinja (rendu par HA)
-        self.need_fc = set()   # (entité météo, type de prévision)
-        self.need_hist = {}    # clé -> (entité, heures)
-        self.cams = set()      # caméras autorisées pour ce rendu
-        self.imgs = {}         # clé -> image de carte picture (chemin HA, URL ou entité)
-        self.pending_side = ""  # pastilles à poser à droite de la prochaine tuile
-        self.in_sic = 0         # > 0 pendant le rendu d'un stack-in-card
-        self.in_stack = 0       # > 0 dans une pile ou une grille (hauteurs libres)
+        self.icons = set()     # icons used (sprite)
+        self.need_tpl = {}     # key -> Jinja template (rendered by HA)
+        self.need_fc = set()   # (weather entity, forecast type)
+        self.need_hist = {}    # key -> (entity, hours)
+        self.cams = set()      # cameras allowed for this rendering
+        self.imgs = {}         # key -> picture card image (HA path, URL or entity)
+        self.pending_side = ""  # dots to place to the right of the next tile
+        self.in_sic = 0         # > 0 while rendering a stack-in-card
+        self.in_stack = 0       # > 0 inside a stack or a grid (free heights)
 
     # ---- slots / actions -------------------------------------------------
     def slot(self, deps, fn):
@@ -723,7 +678,7 @@ class Builder:
         return self.store.states.get(eid)
 
     def kind_color(self, eid):
-        """Couleur par défaut selon le type de mesure, ou None (garder la palette)."""
+        """Default colour depending on the kind of measurement, or None (keep the palette)."""
         st = self.st(eid) or {}
         a = st.get("a") or {}
         dc = str(a.get("device_class") or "")
@@ -743,17 +698,17 @@ class Builder:
         return None
 
     def series_color(self, eid, color, i, fallback=None):
-        """Couleur d'une courbe : celle de la carte, sinon celle du type, sinon la palette."""
+        """Colour of a curve: that of the card, otherwise that of the type, otherwise the palette."""
         if color and HEX.match(str(color)):
             return color
         return self.kind_color(eid) or fallback or SERIES_COLORS[i % len(SERIES_COLORS)]
 
     def prec(self, eid):
-        """Précision d'affichage réglée dans HA (registre des entités)."""
+        """Display precision set in HA (entity registry)."""
         return (self.store.reg.get(eid) or {}).get("dp")
 
     def nm(self, eid, cfg_name=None):
-        """Nom à afficher : texte, ou objet/liste {type: device|entity|area|text}."""
+        """Name to display: text, or object/list {type: device|entity|area|text}."""
         if isinstance(cfg_name, (dict, list)):
             parts = []
             reg = self.store.reg.get(eid) or {}
@@ -785,7 +740,7 @@ class Builder:
             def fn(e=eid):
                 st = self.st(e)
                 tf = ts_format(st, fmt)
-                if tf:      # horodatage : « 1 mois », « Il y a 3 heures »… comme HA
+                if tf:      # timestamp: "1 mois", "Il y a 3 heures"... like HA
                     return (ts_html(st, tf), None)
                 return (E(fmt_state(st, e, self.prec(e))), None)
         sid = self.slot([eid], fn)
@@ -794,7 +749,7 @@ class Builder:
         return '<%s id="%s"%s>%s</%s>' % (tag, sid, c, val, tag)
 
     def value_fn(self, eid, decimals=None):
-        """État d'une entité, l'unité à part (affichée plus petite)."""
+        """State of an entity, the unit apart (displayed smaller)."""
         def fn(x=eid, d=decimals):
             st = self.st(x)
             txt = fmt_state(st, x, self.prec(x) if d is None else d)
@@ -805,7 +760,7 @@ class Builder:
         return fn
 
     def tpl_slot(self, template, tag="span", cls="", markdown=False):
-        """Texte calculé par un template Jinja de Home Assistant (ou texte fixe)."""
+        """Text computed by a Home Assistant Jinja template (or fixed text)."""
         c = ' class="%s"' % cls if cls else ""
         if not has_tpl(template):
             txt = mini_markdown(template) if markdown else E(str(template or ""))
@@ -822,8 +777,8 @@ class Builder:
         return '<%s id="%s"%s>%s</%s>' % (tag, sid, c, fn()[0], tag)
 
     def light_color(self, eid):
-        """Couleur réelle d'une lampe allumée (rgb_color) : « #icône|#fond de pastille » ;
-        "" sans information (le jaune du thème s'applique)."""
+        """Real colour of a lit lamp (rgb_color): "#icon|#dot background";
+        "" without information (the theme yellow applies)."""
         st = self.st(eid) or {}
         rgb = (st.get("a") or {}).get("rgb_color")
         if st.get("s") != "on" or not isinstance(rgb, (list, tuple)) or len(rgb) != 3:
@@ -836,8 +791,8 @@ class Builder:
         return theme.hexc(c) + "|" + theme.hexc(theme.blend(c, card, 0.2))
 
     def box_open(self, base, eid=None, action=None, tag="div", optimistic=False, style=""):
-        """Ouvre un conteneur dont la classe suit l'état (on/off/na) ; pour une lampe,
-        l'icône prend aussi sa couleur réelle (3e valeur du slot, appliquée par s.js)."""
+        """Opens a container whose class follows the state (on/off/na); for a lamp,
+        the icon also takes its real colour (3rd value of the slot, applied by s.js)."""
         attrs = ""
         cls = base
         if eid:
@@ -869,7 +824,7 @@ class Builder:
         return ' data-a="%d"' % (len(self.actions) - 1)
 
     def resolve_action(self, cfg, eid, default):
-        """tap_action Lovelace -> action SlimDash (ou None)."""
+        """Lovelace tap_action -> SlimDash action (or None)."""
         cfg = cfg if isinstance(cfg, dict) else {}
         act = cfg.get("action") or default
         if act == "toggle":
@@ -897,7 +852,7 @@ class Builder:
             return "toggle"
         return "none"
 
-    # ---- icônes, couleurs, graphiques, caméras ---------------------------
+    # ---- icons, colours, graphs, cameras ---------------------------
     def icon(self, name, cls="ic"):
         if not name:
             return ""
@@ -910,8 +865,8 @@ class Builder:
                          else (icons.from_mdi(cfg_icon) or "dot"))
 
     def dc(self, eid, cfg_icon=None):
-        """Groupe de couleur. Pour un interrupteur, l'icône choisie décide
-        (ampoule -> jaune comme une lampe, ventilateur -> cyan, etc.)."""
+        """Colour group. For a switch, the chosen icon decides
+        (bulb -> yellow like a lamp, fan -> cyan, etc.)."""
         dom = domain_of(eid)
         group = icons.COLOR_GROUP.get(dom, "def")
         if group == "switch" or dom == "group":
@@ -930,9 +885,9 @@ class Builder:
         return key
 
     def chart(self, entities, hours, height=None, bars=0, cls="chart", barmap=None):
-        """entities = [(entity_id, couleur ou None[, seuils])] -> HTML d'un graphique (slot).
-        bars = nombre de barres (histogramme seul) ; 0 = courbe.
-        barmap = {rang de l'entité: nombre de barres} : barres derrière les autres courbes."""
+        """entities = [(entity_id, colour or None[, thresholds])] -> HTML of a graph (slot).
+        bars = number of bars (histogram only); 0 = curve.
+        barmap = {entity rank: number of bars}: bars behind the other curves."""
         barmap = barmap or {}
         npts = POINTS[self.cls]
         h = max(24, min(320, int(height or (80 if self.modern else 56))))
@@ -966,15 +921,15 @@ class Builder:
                     vals = [vals[int(j * step)] for j in range(n)]
                 series.append((vals, color, stops, sfill))
             return (spark_svg(series, hh, None, fill=not light and not barmap, pre=pre, gid=gid), None)
-        # Type 1 : la courbe n'est redessinée que toutes les 30 min (la valeur, elle, est en direct).
+        # Type 1: the curve is only redrawn every 30 min (the value itself is live).
         dep = "hist30:" if light else "hist:"
         sid = self.slot([dep + k[0] for k in keys], fn)
         return '<div id="%s" class="%s">%s</div>' % (sid, cls, fn()[0])
 
     def camera(self, eid, title="", overlay=""):
-        # Image de 360 px de haut. data-iv : intervalle visé en ms. Frigate : au rythme de sa
-        # détection (5 i/s en général) ; l'appareil ralentit de lui-même s'il ne suit pas (s.js).
-        # HA : 1 image/s. Vidéo en direct pour les caméras Frigate si le navigateur sait.
+        # 360 px high image. data-iv: target interval in ms. Frigate: at the pace of its
+        # detection (5 fps usually); the device slows down by itself if it cannot keep up (s.js).
+        # HA: 1 image/s. Live video for the Frigate cameras if the browser can.
         self.cams.add(eid)
         src = "/%s/cam?e=%s" % (E(self.store.name), E(eid))
         iv, live = 1000, ""
@@ -1001,25 +956,25 @@ class Builder:
             v = views[i]
             try:
                 body = self.view(v)
-            except Exception:  # une vue cassée ne doit pas tout bloquer
-                log.exception("Erreur de rendu de la vue %s", i)
-                body = '<div class="card"><p>Erreur de rendu de cette vue.</p></div>'
+            except Exception:  # a broken view must not block everything
+                log.exception("Error rendering view %s", i)
+                body = '<div class="card"><p>Error rendering this view.</p></div>'
             result.append({"index": i, "path": str(v.get("path") or i),
-                           "title": v.get("title") or v.get("path") or "Vue %d" % (i + 1),
+                           "title": v.get("title") or v.get("path") or "View %d" % (i + 1),
                            "subview": bool(v.get("subview")), "body": body})
         return result
 
     def view(self, v):
         out = []
         if v.get("strategy"):
-            return '<div class="card"><p>Vue générée automatiquement (strategy) : non prise en charge.</p></div>'
+            return '<div class="card"><p>Automatically generated view (strategy): not supported.</p></div>'
         badges = v.get("badges") or []
         if badges:
             out.append(self.badges(badges))
         if v.get("type") == "sections":
-            # c0 / c1 : colonne gauche / droite quand l'écran en permet deux (paysage)
-            # Une section sur plusieurs colonnes (column_span) occupe toute la largeur
-            # disponible : classe spN, hors de l'alternance gauche / droite.
+            # c0 / c1: left / right column when the screen allows two (landscape)
+            # A section spanning several columns (column_span) takes the whole width
+            # available: class spN, outside the left / right alternation.
             n = 0
             for sec in v.get("sections") or []:
                 inner = self.sect_cards(sec.get("cards") or [])
@@ -1067,7 +1022,7 @@ class Builder:
             eid = b.get("entity") if isinstance(b, dict) else None
             if not eid:
                 continue
-            show_name = b.get("show_name") is True     # HA : nom masqué par défaut
+            show_name = b.get("show_name") is True     # HA: name hidden by default
             out.append(self.badge(eid, self.nm(eid, b.get("name")) if show_name else None,
                                   b.get("icon")))
         out.append("</div>")
@@ -1076,7 +1031,7 @@ class Builder:
     # ---- cartes ----------------------------------------------------------
     @staticmethod
     def grid_cr(c):
-        """(colonnes, rangées) données explicitement dans grid_options, sinon None."""
+        """(columns, rows) given explicitly in grid_options, otherwise None."""
         go = c.get("grid_options") if isinstance(c, dict) and isinstance(c.get("grid_options"), dict) else {}
         try:
             return int(go.get("columns")), int(go.get("rows"))
@@ -1084,9 +1039,9 @@ class Builder:
             return None, None
 
     def sect_cards(self, cards):
-        """Cartes d'une section. Comme la grille de HA (placement « dense ») : après une carte
-        d'une demi-largeur et de N rangées, les demi-cartes suivantes dont les rangées tiennent
-        dans ces N s'empilent dans la colonne d'à côté au lieu de passer à la ligne."""
+        """Cards of a section. Like the HA grid ("dense" placement): after a half-width card
+        of N rows, the following half cards whose rows fit within those N
+        stack in the next column instead of wrapping to the next line."""
         out, i = [], 0
         while i < len(cards):
             c = cards[i]
@@ -1119,7 +1074,7 @@ class Builder:
                 return fn(c)
             return self.c_fallback(c)
         except Exception:
-            log.exception("Erreur de rendu de la carte %s", t)
+            log.exception("Error rendering card %s", t)
             return self.c_fallback(c)
 
     def title(self, c, key="title"):
@@ -1127,12 +1082,12 @@ class Builder:
         return '<h2 class="ch">%s</h2>' % E(str(t)) if isinstance(t, str) and t else ""
 
     def size(self, c, cols, rows):
-        """Taille de la carte comme dans les vues « sections » de HA :
-        colonnes sur 12 (3 = quart, 6 = moitié, 12 = pleine largeur), lignes de 56 px."""
+        """Size of the card like in the HA "sections" views:
+        columns out of 12 (3 = quarter, 6 = half, 12 = full width), rows of 56 px."""
         go = c.get("grid_options") if isinstance(c.get("grid_options"), dict) else {}
         lo = c.get("layout_options") if isinstance(c.get("layout_options"), dict) else {}
         col, row = go.get("columns"), go.get("rows")
-        if col is None and lo.get("grid_columns") is not None:     # ancien format, sur 4
+        if col is None and lo.get("grid_columns") is not None:     # old format, out of 4
             try:
                 col = int(lo["grid_columns"]) * 3
             except (TypeError, ValueError):
@@ -1149,12 +1104,12 @@ class Builder:
         try:
             row = int(row) if row is not None else rows
         except (TypeError, ValueError):
-            row = None          # « auto »
+            row = None          # "auto"
         return col, row
 
     def height(self, rows):
-        """Hauteur exacte de la carte : N unités de 56 px séparées de 8 px (comme HA).
-        Dans un stack-in-card, simple hauteur minimale (rendu inchangé de ces cartes)."""
+        """Exact height of the card: N units of 56 px separated by 8 px (like HA).
+        In a stack-in-card, a simple minimum height (rendering of these cards unchanged)."""
         if not rows:
             return ""
         px = rows * 56 + (rows - 1) * 8
@@ -1165,8 +1120,8 @@ class Builder:
     def tile_html(self, eid, name_html, state_html, action, cfg_icon=None, extra="",
                   cols=6, rows=None, vertical=False, optimistic=True, base_extra="", side="",
                   icon_color=None, card=None, color=None, style_extra=""):
-        """color = option color d'une tuile ou d'un bouton : l'icône la prend quand l'entité
-        est active (toujours pour un bouton, une scène, un script)."""
+        """color = colour option of a tile or a button: the icon takes it when the entity
+        is active (always for a button, a scene, a script)."""
         base = "card tile w%d%s%s" % (cols, " vt" if vertical else "", base_extra)
         if color and not icon_color and mc_class(color) and (
                 not eid or domain_of(eid) in STATELESS):
@@ -1175,7 +1130,7 @@ class Builder:
             side, self.pending_side = side + self.pending_side, ""
         cs = self.card_style(card) if card else {}
         if " bc" in base_extra:
-            cs.pop("h", None)       # bouton compact : une unité de hauteur (56 px)
+            cs.pop("h", None)       # compact button: one unit of height (56 px)
         style = ";".join(x for x in (
             ("min-height:%dpx" % cs["h"]) if cs.get("h") else self.height(rows),
             ("background:%s" % cs["bg"]) if cs.get("bg") else "", style_extra) if x)
@@ -1185,13 +1140,13 @@ class Builder:
                 + (self.icon_box(ic, icon_color, eid if mc_class(color) else None, color)
                    if ic else "") + side
                 + '<span class="tx%s"><span class="tn">%s</span>%s</span>%s</div>' % (
-                    "" if state_html else " one",  # nom seul : centré en hauteur (s.css)
+                    "" if state_html else " one",  # name only: centred in height (s.css)
                     name_html, ('<span class="ts">%s</span>' % state_html) if state_html else "",
                     extra))
 
     def icon_box(self, ic, icon_color, eid=None, color=None):
-        """Pastille d'icône ; icon_color = couleur mushroom fixe ou template Jinja ;
-        color (avec eid) = couleur appliquée seulement quand l'entité est allumée."""
+        """Icon dot; icon_color = fixed mushroom colour or Jinja template;
+        color (with eid) = colour applied only when the entity is on."""
         if eid and color and not icon_color:
             def fnc(e=eid, mc=mc_class(color)):
                 return (None, mc if state_class(self.st(e)) == "on" else "")
@@ -1210,7 +1165,7 @@ class Builder:
         return '<span id="%s" class="ti %s" data-b="ti">%s</span>' % (sid, fn()[1], ic)
 
     def card_style(self, c):
-        """Fond et hauteur imposés par card_mod / uix / styles de button-card (rien d'autre)."""
+        """Background and height imposed by card_mod / uix / button-card styles (nothing else)."""
         css = ""
         for k in ("uix", "card_mod"):
             v = c.get(k)
@@ -1241,8 +1196,8 @@ class Builder:
 
     def c_entities(self, c):
         out = ['<div class="card">', self.title(c)]
-        # Interrupteur d'en-tête, comme HA : titre présent, show_header_toggle pas à false,
-        # au moins 2 entités basculables ; allumé si l'une l'est, tout éteint / tout allumé.
+        # Header switch, like HA: title present, show_header_toggle not false,
+        # at least 2 toggleable entities; on if one is, all off / all on.
         ents = []
         for r in c.get("entities") or []:
             e = r if isinstance(r, str) else (r.get("entity") if isinstance(r, dict) and not r.get("type") else None)
@@ -1284,7 +1239,7 @@ class Builder:
             nm = self.nm(eid, r.get("name")) if eid else (r.get("name") or "")
             return '<div class="row">%s<span class="nm">%s</span><span class="rt"><span class="btn lk"%s>%s</span></span></div>' % (
                 self.row_icon(eid, r.get("icon")) if eid else "", E(str(nm)),
-                self.action_attrs(act), E(str(r.get("action_name") or "Exécuter")))
+                self.action_attrs(act), E(str(r.get("action_name") or "Run")))
         if t == "buttons":
             parts = []
             for b in r.get("entities") or []:
@@ -1347,9 +1302,9 @@ class Builder:
                     nm, self.text_slot(eid, fmt=r.get("format"))))
 
     def edit_ctrl(self, eid):
-        """Valeur modifiable d'une ligne (nombre, liste, heure, date, texte), comme HA.
-        Le champ envoie sa valeur au changement (data-e = action) ; s.js ne le remplace pas
-        pendant qu'on le modifie."""
+        """Editable value of a row (number, list, time, date, text), like HA.
+        The field sends its value on change (data-e = action); s.js does not replace it
+        while it is being edited."""
         acts = {}
         for part in ("", "date", "time"):
             acts[part] = self.action_attrs({"kind": "set", "entity": eid, "part": part}).replace(
@@ -1414,7 +1369,7 @@ class Builder:
             return time_in(val, acts[""])
         if dom == "date":
             return date_in(val, acts[""])
-        # input_datetime : date et/ou heure (« 2026-11-13 07:30:00 », « 07:30:00 », « 2026-11-13 »)
+        # input_datetime: date and/or time ("2026-11-13 07:30:00", "07:30:00", "2026-11-13")
         out = []
         if a.get("has_date"):
             out.append(date_in(val[:10] if "-" in val[:10] else "", acts["date"]))
@@ -1422,13 +1377,13 @@ class Builder:
             out.append(time_in(val[-8:] if ":" in val else "", acts["time"]))
         return " ".join(out) or E(fmt_state(st, eid))
 
-    # ---- lampes : couleurs favorites, curseurs luminosité / température ----
+    # ---- lamps: favourite colours, brightness / temperature sliders ----
     def pal(self):
         return getattr(self.store, "palette", None) or theme.palette(None)
 
     def light_slider(self, eid, what):
-        """Curseur comme ha-control-slider : barre (luminosité) ou repère sur un dégradé
-        de blancs (température). Glissé au doigt par s.js, envoyé au relâcher."""
+        """Slider like ha-control-slider: bar (brightness) or marker on a gradient
+        of whites (temperature). Dragged by finger by s.js, sent on release."""
         attr = self.action_attrs({"kind": "light", "entity": eid, "what": what}).replace("data-a", "data-s")
         at = (self.st(eid) or {}).get("a") or {}
         lo = float(at.get("min_color_temp_kelvin") or 2000)
@@ -1468,8 +1423,8 @@ class Builder:
         return '<div class="lsl" id="%s"%s>%s</div>' % (sid, attr, fn()[0])
 
     def toggle_switch(self, eid):
-        """Fonctionnalité « toggle » comme ha-control-switch : fond gris, curseur d'une
-        demi-largeur à gauche (éteint, gris) ou à droite (allumé, couleur de l'entité)."""
+        """"toggle" feature like ha-control-switch: grey background, half-width knob
+        on the left (off, grey) or on the right (on, entity colour)."""
         light = domain_of(eid) == "light"
         ic_on, ic_off = ("m-lightbulb", "m-lightbulb-off") if light else ("m-power", "m-power-off")
         self.icons.add(ic_on)
@@ -1492,8 +1447,8 @@ class Builder:
             sid, self.action_attrs({"kind": "toggle", "entity": eid}), fn()[0])
 
     def light_favorites(self, eid):
-        """Couleurs favorites de la lampe (réglées dans HA), sinon celles que HA propose
-        par défaut : 4 blancs du plus chaud au plus froid, puis 4 couleurs."""
+        """Favourite colours of the lamp (set in HA), otherwise those HA offers
+        by default: 4 whites from warmest to coolest, then 4 colours."""
         favs = (self.store.reg.get(eid) or {}).get("fav")
         at = (self.st(eid) or {}).get("a") or {}
         if not favs:
@@ -1531,8 +1486,8 @@ class Builder:
         n = len(items) + (1 if hue else 0)
         if not n:
             return ""
-        # Pourcentages seulement (calc() est ignoré par certains navigateurs Android 4.4) :
-        # écart de 1,43 % = 8 px sur une carte de 560 px, comme l'original.
+        # Percentages only (calc() is ignored by some Android 4.4 browsers):
+        # gap of 1.43 % = 8 px on a 560 px card, like the original.
         gap = 1.43
         wv = (100.0 - gap * (n - 1)) / n
         w = "width:%.3f%%" % wv
@@ -1544,8 +1499,8 @@ class Builder:
                 w + (";margin-left:%.2f%%" % gap if i else ""), theme.hexc(tuple(int(round(max(0, min(255, float(x))))) for x in rgb))))
         if not hue:
             return '<div class="lfv">%s</div>' % "".join(out)
-        # Case arc-en-ciel : ouvre la barre de teintes (toutes les cases sauf la dernière) ;
-        # la dernière case prend la teinte glissée (la lampe suit en direct) et valide.
+        # Rainbow box: opens the hue bar (all the boxes except the last);
+        # the last box takes the dragged hue (the lamp follows live) and validates.
         grad = "background:-webkit-linear-gradient(left, %s);background:linear-gradient(to right, %s)" % (
             RAINBOW, RAINBOW)
         out.append('<span class="lfb lfm" data-p="m" style="%s;%s"></span>' % (
@@ -1654,14 +1609,14 @@ class Builder:
         mini = (2 if vertical else 1) + nfeat
         cols, rows = self.size(c, 12 if side else 6, mini)
         if rows is not None and rows < mini:
-            rows = mini         # HA agrandit la carte pour loger toutes les fonctionnalités
+            rows = mini         # HA enlarges the card to fit all the features
         if (vertical and self.in_stack and str(c.get("type", "")).startswith("custom:mushroom")
                 and not c.get("grid_options") and not c.get("layout_options")):
-            rows = None         # mushroom vertical dans une pile : hauteur naturelle, comme HA
+            rows = None         # vertical mushroom in a stack: natural height, like HA
         pad, tfx = "", ""
         if extra and rows and not vertical and not self.in_sic:
-            # Placement de HA : fonctionnalités de 42 px espacées de 12 px, la dernière à
-            # 12 px du bas ; l'en-tête (36 px) centré dans la place restante au-dessus.
+            # HA placement: 42 px features spaced 12 px apart, the last one
+            # 12 px from the bottom; the header (36 px) centred in the space left above.
             h = rows * 56 + (rows - 1) * 8
             top = h - nfeat * 54
             pt = max(6, top // 2 - 18)
@@ -1674,12 +1629,12 @@ class Builder:
                               base_extra=(" tf" if extra else "") + tfx + (" tfi" if side else ""))
 
     def c_light(self, c):
-        """Carte « light » de HA : cadran de luminosité sur 270° (ha-control-circular-slider,
-        trait 24/320), grosse ampoule au centre (allume / éteint), luminosité et nom dessous."""
+        """HA "light" card: brightness dial over 270 degrees (ha-control-circular-slider,
+        24/320 stroke), big bulb in the centre (on / off), brightness and name below."""
         eid = c.get("entity")
         if not eid:
             return ""
-        arc = "M 145 0 A 145 145 0 1 1 0 -145"          # 270°, tourné de 135° (bas gauche)
+        arc = "M 145 0 A 145 145 0 1 1 0 -145"          # 270 degrees, rotated by 135 degrees (bottom left)
         full = 683.3
 
         def col(e):
@@ -1690,8 +1645,8 @@ class Builder:
             c1 = self.light_color(e).split("|")[0] or p["groups"].get("light", ("#ffc107",))[0]
             if p.get("dark", True):
                 return c1
-            # thème clair : une lampe blanche resterait invisible sur la carte blanche ;
-            # couleur presque blanche -> couleur « lampe allumée » du thème
+            # light theme: a white lamp would stay invisible on the white card;
+            # almost white colour -> theme "lamp on" colour
             rgb = theme.parse(c1) or (255, 193, 7, 1.0)
             if max(rgb[:3]) - min(rgb[:3]) < 40:
                 c1 = p["groups"].get("light", ("#ffc107",))[0]
@@ -1708,7 +1663,7 @@ class Builder:
             c1, v = col(e), pct(e)
             dim = (self.st(e) or {}).get("s") != "on" or v is None
             p = self.pal()
-            # éteinte : gris mesuré sur HA (sombre) ; en clair, gris inactif du thème (lisible sur blanc)
+            # off: grey measured on HA (dark); in light, inactive grey of the theme (readable on white)
             off = "#c2c2c2" if p.get("dark", True) else p["inact"]
             return ('<svg viewBox="0 0 320 320"><g transform="translate(160 160) rotate(135)">'
                     '<path class="lgt" d="%s" style="stroke:%s;stroke-opacity:%s"/>'
@@ -1721,7 +1676,7 @@ class Builder:
             st = self.st(e) or {}
             if (domain_of(e) == "light" and st.get("s") != "on" and not c.get("icon")
                     and not (st.get("a") or {}).get("icon")):
-                ic = self.icon(icons.from_mdi("mdi:lightbulb-off"))   # icône d'état HA : ampoule barrée
+                ic = self.icon(icons.from_mdi("mdi:lightbulb-off"))   # HA state icon: crossed-out bulb
             else:
                 ic = self.ent_icon(e, c.get("icon"))
             return ('<span class="lgi" style="color:%s">%s</span>' % (
@@ -1732,7 +1687,7 @@ class Builder:
             return ("&nbsp;" if v is None else "%d %%" % v, None)
 
         slider = self.action_attrs({"kind": "light", "entity": eid, "what": "b"}).replace("data-a", "data-s")
-        if domain_of(eid) == "light":   # les deux icônes dans la page : l'état change en direct
+        if domain_of(eid) == "light":   # the two icons are in the page: the state changes live
             self.icons.add(icons.from_mdi("mdi:lightbulb-off"))
             self.ent_icon(eid, c.get("icon"))
         did = self.slot([eid], dial)
@@ -1771,7 +1726,7 @@ class Builder:
         graph = ""
         cols, rows = self.size(c, 6, 2)
         if c.get("type") == "sensor" and c.get("graph") == "line":
-            # la courbe occupe le bas de la carte, sous la valeur (71 px)
+            # the curve takes the bottom of the card, under the value (71 px)
             gh = (rows * 56 + (rows - 1) * 8 - 71) if rows else None
             graph = self.chart([(eid, None)], c.get("hours_to_show") or 24, gh)
         head = '%s<div class="tn">%s</div>' % (
@@ -1802,7 +1757,7 @@ class Builder:
             if v is None:
                 return "na"
             if sev:
-                # Comme HA : la couleur du plus haut seuil atteint, quel que soit l'ordre.
+                # Like HA: the colour of the highest threshold reached, whatever the order.
                 best = None
                 for k, cl in (("green", "grn"), ("yellow", "yel"), ("red", "red")):
                     try:
@@ -1827,8 +1782,8 @@ class Builder:
         act = self.resolve_action(c.get("tap_action"), eid, "none")
         name = '<div class="tn">%s</div>' % E(self.nm(eid, c.get("name")))
         if self.in_stack and not c.get("grid_options") and not c.get("layout_options"):
-            # Dans une pile, comme HA : hauteur naturelle, l'arc suit la largeur de la carte
-            # et la valeur est dans l'arc (texte SVG, qui grandit avec lui).
+            # In a stack, like HA: natural height, the arc follows the width of the card
+            # and the value is in the arc (SVG text, which grows with it).
             def farc(e=eid):
                 v = val(e)
                 return ('<svg class="ga" viewBox="0 0 100 56"><path class="gb" d="M10 50A40 40 0 0 1 90 50"/>'
@@ -1843,8 +1798,8 @@ class Builder:
         if grows is None:
             grows = 3 if gcols == 12 else 2
         gbase = "card w%d gauge gfx%s" % (gcols, " g3" if grows and grows >= 3 else "")
-        # Jauge en demi-cercle (arc SVG, longueur π·40 ≈ 125,7), valeur dans l'arc comme HA :
-        # l'arc suit la largeur de la carte (taille maxi fixée en CSS) et le texte avec lui.
+        # Half-circle gauge (SVG arc, length pi*40 = 125.7), value in the arc like HA:
+        # the arc follows the width of the card (max size set in CSS) and the text with it.
         def arc(e=eid):
             v = val(e)
             return ('<svg class="ga" viewBox="0 0 100 56"><path class="gb" d="M10 50A40 40 0 0 1 90 50"/>'
@@ -1857,7 +1812,7 @@ class Builder:
                 + name + "</div>")
 
     def c_energy_self_sufficiency_gauge(self, c):
-        """Jauge d'autosuffisance (carte énergie native) : valeur calculée par le serveur."""
+        """Self-sufficiency gauge (native energy card): value computed by the server."""
         self.need_hist["e:ss"] = ("energy", 0)
 
         def val():
@@ -1873,7 +1828,7 @@ class Builder:
                     % (lv, f * 125.7, "—" if v is None else "%d %%" % round(v)), None)
 
         gcols, grows = self.size(c, 6, 2)
-        if grows is None:       # « auto » : même hauteur que la jauge classique
+        if grows is None:       # "auto": same height as the classic gauge
             grows = 3 if gcols == 12 else 2
         gbase = "card w%d gauge gfx%s" % (gcols, " g3" if grows >= 3 else "")
         sid = self.slot(["hist:e:ss"], arc)
@@ -1882,7 +1837,7 @@ class Builder:
                 + '<div class="tn">%s</div></div>' % E(str(c.get("title") or "Taux d'autosuffisance")))
 
     def c_markdown(self, c):
-        # text_only : texte seul, sans fond, bordure ni ombre (comme HA)
+        # text_only: text alone, no background, border or shadow (like HA)
         return ('<div class="card md%s">' % (" txo" if c.get("text_only") else "") + self.title(c)
                 + self.tpl_slot(str(c.get("content") or ""), tag="div", markdown=True) + "</div>")
 
@@ -1903,8 +1858,8 @@ class Builder:
         return '<span class="%s">%s</span>' % (cls, self.icon(icons.WEATHER.get(cond, "cloud")))
 
     def c_weather_forecast(self, c):
-        """Comme HA : icône, état et lieu à gauche, température et max / min à droite ;
-        prévisions en colonnes (jour, icône, max, min)."""
+        """Like HA: icon, state and place on the left, temperature and max / min on the right;
+        forecast in columns (day, icon, max, min)."""
         eid = c.get("entity")
         if not eid:
             return ""
@@ -1914,7 +1869,7 @@ class Builder:
         key = "fc:%s:%s" % (eid, ftype)
         if fcst:
             self.need_fc.add((eid, ftype))
-        self.icons.update(set(icons.WEATHER.values()))    # la météo change : toutes ses icônes
+        self.icons.update(set(icons.WEATHER.values()))    # the weather changes: all its icons
         drop = self.icon("drop")
         place = E(str(self.nm(eid, c.get("name"))))
 
@@ -1939,7 +1894,7 @@ class Builder:
                         E("%s\u00a0%s" % (num(t), unit)) if t is not None else "",
                         second, E(weather_txt(s)), place), None)
 
-        # Comme HA : 4U avec prévisions, 2U pour la météo actuelle seule.
+        # Like HA: 4U with forecast, 2U for the current weather alone.
         cols, rows = self.size(c, 12, 4 if fcst and show_cur else 2)
         out = ['<div class="card wx w%d%s" style="%s">' % (cols, " wf" if fcst else "", self.height(rows))]
         if show_cur:
@@ -1951,7 +1906,7 @@ class Builder:
                 for f in (self.store.fc.get(k) or [])[:5]:
                     try:
                         d = datetime.fromisoformat(str(f.get("datetime")).replace("Z", "+00:00")).astimezone()
-                        lab = DAYS_FR[d.weekday()] if ft != "hourly" else d.strftime("%H:%M")
+                        lab = i18n.day_name(d.weekday(), True) if ft != "hourly" else d.strftime("%H:%M")
                     except (ValueError, TypeError):
                         lab = ""
                     hi, lo = f.get("temperature"), f.get("templow")
@@ -1978,7 +1933,7 @@ class Builder:
                     self.text_slot(eid, cls="sub"), self.climate_ctrl(eid)))
 
     def graph_rows(self, c, entities, hours, title):
-        """Comme HA : titre, graphique, puis légende (pastille de couleur, nom, valeur)."""
+        """Like HA: title, graph, then legend (colour dot, name, value)."""
         cols, rows = self.size(c, 12, 6)
         out = ['<div class="card hg w%d" style="%s">' % (cols, self.height(rows)),
                ('<h2 class="ch">%s</h2>' % E(title)) if title else ""]
@@ -1995,7 +1950,7 @@ class Builder:
                 color, E(self.nm(eid, e.get("name"))), self.text_slot(eid, cls="lv")))
         if series:
             gh = None
-            if rows:   # hauteur de la carte - titre - légende
+            if rows:   # height of the card - title - legend
                 gh = rows * 56 + (rows - 1) * 8 - (62 if title else 16) - 56
             out.append(self.chart(series, hours, gh))
             out.append('<div class="lgs">%s</div>' % "".join(legend))
@@ -2011,7 +1966,7 @@ class Builder:
                                c.get("title"))
 
     def c_custom_statistics_graph_chart_card(self, c):
-        """Carte « statistics-graph-chart-card » : en-tête, valeur(s), courbes ou barres."""
+        """"statistics-graph-chart-card" card: header, value(s), curves or bars."""
         ents = [e if isinstance(e, dict) else {"entity": e} for e in c.get("entities") or []]
         ents = [e for e in ents if e.get("entity")][:4]
         title = c.get("card_header") or c.get("title") or ""
@@ -2022,11 +1977,11 @@ class Builder:
             gh = None
         single = len(ents) == 1
         cols, rows = self.size(c, 12, None if (gh or not single) else 4)
-        if rows and not gh:     # hauteur de la carte - marges, titre, valeurs
+        if rows and not gh:     # height of the card - margins, title, values
             gh = rows * 56 + (rows - 1) * 8 - 24 - (30 if has_title else 0) - 62
         hc = c.get("card_header_color")
-        # Dans un stack-in-card, les marges négatives de « styles » (ha-card margin-top,
-        # .sgc-plot-wrap margin) font remonter le graphique sous la carte du dessus, comme HA.
+        # In a stack-in-card, the negative margins of "styles" (ha-card margin-top,
+        # .sgc-plot-wrap margin) pull the graph up under the card above, like HA.
         lift = ""
         sty = str(c.get("styles") or "")
         if self.in_sic and not has_title:
@@ -2048,7 +2003,7 @@ class Builder:
                 st = self.st(x)
                 txt = fmt_state(st, x, self.prec(x) if d is None else d)
                 unit = ((st or {}).get("a") or {}).get("unit_of_measurement")
-                if unit and txt.endswith(" " + unit):     # valeur grande, unité plus petite
+                if unit and txt.endswith(" " + unit):     # large value, smaller unit
                     return ('%s<span class="u">%s</span>' % (E(txt[:-len(unit) - 1]), E(unit)), None)
                 return (E(txt), None)
             return fn
@@ -2081,7 +2036,7 @@ class Builder:
 
     @staticmethod
     def thresholds(e):
-        """color_thresholds actifs d'une entité -> [(valeur, (r, g, b))] triés, ou None."""
+        """Active color_thresholds of an entity -> [(value, (r, g, b))] sorted, or None."""
         th = e.get("color_thresholds") if isinstance(e, dict) else None
         if not isinstance(th, dict) or not th.get("enabled"):
             return None
@@ -2097,7 +2052,7 @@ class Builder:
         return tuple(out) or None
 
     def stat_value_fn(self, e):
-        """Valeur + unité ; colorée si « state_adaptive_color » (couleur fixe ou seuils)."""
+        """Value + unit; coloured if "state_adaptive_color" (fixed colour or thresholds)."""
         eid, d = e["entity"], e.get("decimals")
         fixed = e.get("color") if e.get("state_adaptive_color") and hex_rgb(e.get("color")) else None
         stops = []
@@ -2130,14 +2085,14 @@ class Builder:
         return fn
 
     def readable(self, color):
-        """Couleur choisie dans une carte, lisible sur le fond du thème (thème clair)."""
+        """Colour chosen in a card, readable on the theme background (light theme)."""
         return theme.readable(color, self.pal().get("card") or "#1c1c1c")
 
     def stat_multi(self, c, ents, title, hc, hours, gh, cols, rows):
-        """Plusieurs entités. Noms affichés : liste « nom valeur ». Noms masqués : valeurs
-        placées à gauche / au centre / à droite (align_state), chacune à sa taille."""
-        # Noms sous les valeurs (name_position: below) : présentation en grandes valeurs,
-        # comme la carte d'origine ; sinon liste « pastille nom valeur ».
+        """Several entities. Names shown: "name value" list. Names hidden: values
+        placed left / centre / right (align_state), each at its own size."""
+        # Names under the values (name_position: below): large values presentation,
+        # like the original card; otherwise "dot name value" list.
         below = any(not e.get("hide_name") and e.get("name_position") == "below" for e in ents)
         listed = any(not e.get("hide_name") for e in ents) and not below
         if not gh and rows:
@@ -2161,7 +2116,7 @@ class Builder:
             if stops:
                 color = "#%02x%02x%02x" % stops[0][1]
             colors.append(color)
-            if e.get("show_graph") is False:        # valeur seule, pas de courbe (comme HA)
+            if e.get("show_graph") is False:        # value alone, no curve (like HA)
                 continue
             if e.get("graph_type") == "bar":
                 try:
@@ -2178,7 +2133,7 @@ class Builder:
                     self.text_slot(eid, self.stat_value_fn(e), cls="sx")))
             out.append(self.chart(series, hours, gh, barmap=barmap))
         else:
-            # décalages demandés par les « styles » de la carte (marges des classes d'alignement)
+            # offsets requested by the "styles" of the card (margins of the alignment classes)
             shift, push_right = {}, False
             for m in re.finditer(r"\.sgc-state-align-(left|center|right)\s*\{([^}]*)\}", str(c.get("styles") or "")):
                 dx = dy = 0.0
@@ -2188,15 +2143,15 @@ class Builder:
                     dy = top
                     dx = {"left": left, "right": -right, "center": (left - right) / 2}[m.group(1)]
                     if m.group(1) == "center" and right < 0 and right < left:
-                        # centre poussé vers la droite (marge droite négative) : calé à droite
+                        # centre pushed to the right (negative right margin): aligned right
                         push_right, dx = True, 0.0
                 mt = re.search(r"margin-top\s*:\s*(-?[\d.]+)px", m.group(2))
                 if mt:
                     dy = float(mt.group(1))
                 shift[m.group(1)] = (dx, dy)
-            # Comme la carte d'origine : interligne 1,6 x la taille, 5 px au-dessus et
-            # au-dessous de chaque valeur, zones calées en haut sous le titre ; la hauteur
-            # de la bande tient compte des décalages verticaux des styles.
+            # Like the original card: line height 1.6 x the size, 5 px above and
+            # below each value, areas aligned at the top under the title; the height
+            # of the strip takes the vertical offsets of the styles into account.
             zones = {"left": [], "center": [], "right": []}
             hmax = 0
             for e in ents:
@@ -2235,7 +2190,7 @@ class Builder:
         return self.stack(c, "hs")
 
     def c_custom_stack_in_card(self, c):
-        """Une seule carte (un seul fond) contenant les cartes empilées, comme stack-in-card."""
+        """A single card (a single background) containing the stacked cards, like stack-in-card."""
         cards = [x for x in c.get("cards") or [] if isinstance(x, dict)]
         parts, skip = [], set()
         self.in_sic += 1
@@ -2243,8 +2198,8 @@ class Builder:
             if i in skip:
                 continue
             nxt = cards[i + 1] if i + 1 < len(cards) else {}
-            # Pastilles alignées à droite juste après une tuile : sur la ligne de la tuile
-            # (remplace le décalage par marges négatives des card_mod).
+            # Dots aligned to the right just after a tile: on the line of the tile
+            # (replaces the card_mod negative-margin offset).
             if (nxt.get("type") == "custom:mushroom-chips-card" and nxt.get("alignment") == "end"
                     and x.get("type") in ("custom:mushroom-template-card", "custom:mushroom-entity-card",
                                           "tile")):
@@ -2259,7 +2214,7 @@ class Builder:
         if not inner:
             return ""
         mode = " sh" if c.get("mode") == "horizontal" else ""
-        # Largeur dans la section (grid_options) : demi-carte, tiers… comme les autres cartes.
+        # Width in the section (grid_options): half card, third... like the other cards.
         cols, _ = self.size(c, 12, None)
         if cols in (3, 4, 6, 9) and not self.in_stack:
             mode += " w%d" % cols
@@ -2317,14 +2272,14 @@ class Builder:
         sid = self.slot(deps, fn)
         return '<div id="%s" class="cond %s" data-b="cond">%s</div>' % (sid, fn()[1], inner)
 
-    # ---- caméras ---------------------------------------------------------
+    # ---- cameras ---------------------------------------------------------
     def overlay(self, ents):
         parts = []
         for e in ents or []:
             if isinstance(e, str):
                 e = {"entity": e}
             eid = e.get("entity") if isinstance(e, dict) else None
-            if eid:     # icône seule, colorée selon l'état (comme picture-glance)
+            if eid:     # icon only, coloured according to the state (like picture-glance)
                 parts.append(self.box_open("oi " + self.dc(eid, e.get("icon")), eid, None, tag="span")
                              + self.ent_icon(eid, e.get("icon")) + "</span>")
         return '<span class="co">%s</span>' % "".join(parts) if parts else ""
@@ -2347,11 +2302,11 @@ class Builder:
             state = '<span class="co">%s</span>' % self.text_slot(eid)
         return self.camera(cam, title, state)
 
-    # ---- carte picture (image fixe) ---------------------------------------
+    # ---- picture card (fixed image) ---------------------------------------
     def img_source(self, image):
-        """image d'une carte picture -> chemin HA (/local/…, /api/image/serve/…) ou URL http(s).
-        Image envoyée dans HA (media-source://image_upload/ID) : 512 px pour les types 1 et 2
-        (vieux appareils), taille d'origine en type 3."""
+        """image of a picture card -> HA path (/local/..., /api/image/serve/...) or http(s) URL.
+        Image uploaded in HA (media-source://image_upload/ID): 512 px for types 1 and 2
+        (old devices), original size on type 3."""
         return img_path(image, self.modern)
 
     def img_key(self, spec):
@@ -2360,8 +2315,8 @@ class Builder:
         return key
 
     def c_picture(self, c):
-        """Carte picture : l'image sur toute la largeur de la carte, sans marge (comme HA).
-        Avec une hauteur imposée (rows), l'image couvre la carte (fond, compris d'Android 4)."""
+        """Picture card: the image over the whole width of the card, without margin (like HA).
+        With an imposed height (rows), the image covers the card (background, understood by Android 4)."""
         name = E(self.store.name)
         ent = c.get("image_entity")
         if isinstance(ent, str) and domain_of(ent) in ("image", "person"):
@@ -2414,12 +2369,12 @@ class Builder:
         cam = self.first_camera(c)
         return self.camera(cam) if cam else ""
 
-    # ---- cartes personnalisées traduites ---------------------------------
+    # ---- translated custom cards ---------------------------------------
     def c_custom_button_card(self, c):
         eid = c.get("entity")
         name = c.get("name") if isinstance(c.get("name"), str) and "[[[" not in c.get("name") else None
         if not eid and not name:
-            return ""  # espaceur ou carte 100 % JavaScript
+            return ""  # spacer or 100 % JavaScript card
         act = self.resolve_action(c.get("tap_action"), eid,
                                   self.default_tap(eid) if eid else "none")
         nm = E(self.nm(eid, name) if eid else name) if c.get("show_name", True) else ""
@@ -2428,8 +2383,8 @@ class Builder:
         layout = str(c.get("layout") or "vertical")
         h = self.card_style(c).get("h")
         if h and h <= 80:
-            # Hauteur imposée faible (ex. 60 px) : bouton compact sur une unité,
-            # icône à gauche du nom, le tout centré.
+            # Low imposed height (e.g. 60 px): compact button on one unit,
+            # icon to the left of the name, all centred.
             cols, rows = self.size(c, 3, 1)
             return self.tile_html(eid, nm, state, act, cfg_icon=icon, base_extra=" bt bc",
                                   cols=cols, rows=1, card=c)
@@ -2454,7 +2409,7 @@ class Builder:
         vertical = c.get("layout") == "vertical"
         cols, rows = self.size(c, 6, 2 if vertical else 1)
         if vertical and self.in_stack and not c.get("grid_options") and not c.get("layout_options"):
-            rows = None         # dans une pile : hauteur naturelle, comme HA
+            rows = None         # in a stack: natural height, like HA
         return self.tile_html(eid, self.tpl_slot(primary), self.tpl_slot(secondary) if secondary else "",
                               act, cfg_icon=icon or "mdi:dot", optimistic=False,
                               cols=cols, rows=rows, vertical=vertical,
@@ -2517,8 +2472,8 @@ class Builder:
             if isinstance(s, dict) and s.get("entity"):
                 se = s["entity"]
                 txt = (E(self.nm(se, s.get("name"))) + " ") if s.get("show_name") else ""
-                # Valeurs : show_state (ancien format) ou state_content (nouveau : « state »,
-                # « last_updated », « last_changed », nom d'attribut ; texte ou liste).
+                # Values: show_state (old format) or state_content (new: "state",
+                # "last_updated", "last_changed", attribute name; text or list).
                 sc = s.get("state_content")
                 sc = [sc] if isinstance(sc, str) else [x for x in (sc or []) if isinstance(x, str)]
                 if s.get("show_state") and "state" not in sc:
@@ -2528,11 +2483,11 @@ class Builder:
                 vals = []
                 for k in sc[:3]:
                     if k == "state":
-                        def fn(e=se):  # Bubble met une majuscule à l'état
+                        def fn(e=se):  # Bubble capitalises the state
                             return (E(cap(fmt_state(self.st(e), e, self.prec(e)))), None)
                         vals.append(self.text_slot(se, fn))
                     elif k in ("last_updated", "last_changed", "last-updated", "last-changed"):
-                        def fn(e=se):  # « Il y a 44 minutes », comme Bubble
+                        def fn(e=se):  # "Il y a 44 minutes", like Bubble
                             st = self.st(e)
                             return (rel_span(st.get("lc") if st else None), None)
                         vals.append(self.text_slot(se, fn))
@@ -2548,16 +2503,16 @@ class Builder:
                 chips.append(self.box_open("badge %s%s" % ("" if txt else "io ", self.dc(se, s.get("icon"))),
                                            se, None, tag="span")
                              + ic + txt + "</span>")
-        # Valeurs à droite, sur la même ligne que le nom (comme bubble-card).
+        # Values on the right, on the same line as the name (like bubble-card).
         side = '<span class="subs">%s</span>' % "".join(chips) if chips else ""
-        # Bubble n'affiche l'état sous le nom que si show_state est activé.
+        # Bubble only shows the state under the name if show_state is on.
         state = self.text_slot(eid) if c.get("show_state") else ""
         cols, rows = self.size(c, 12 if chips else 6, 1)
         return self.tile_html(eid, E(self.nm(eid, c.get("name"))), state, act,
                               cfg_icon=c.get("icon"), side=side, cols=cols, rows=rows,
                               base_extra=" tb" if chips else "")
 
-    # Carte personnalisée "custom:digital-clock" : horloge locale (JS).
+    # Custom card "custom:digital-clock": local clock (JS).
     def c_custom_digital_clock(self, c):
         def line(fmt, lay, dfmt, dsize):
             lay = lay if isinstance(lay, dict) else {}
@@ -2578,7 +2533,7 @@ class Builder:
             line(c.get("secondLineFormat"), c.get("secondLineLayout"), "ccc d LLL", 1.6)))
 
     def c_fallback(self, c):
-        """Carte inconnue/personnalisée : liste lisible des entités trouvées."""
+        """Unknown/custom card: readable list of the entities found."""
         cam = self.first_camera(c)
         if cam:
             return self.camera(cam)

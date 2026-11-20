@@ -1,6 +1,6 @@
-/* SlimDash - type 2 (navigateurs ~2016-2019), chargee apres s.css : flexbox et variables CSS. */
+/* SlimDash - type 2 (browsers ~2016-2019), loaded after s.css: flexbox and CSS variables. */
 
-/* ===== Base, bandeau, onglets, grille des cartes ===== */
+/* ===== Base, banner, tabs, card grid ===== */
 html, body { background: var(--bg); }
 body { color: var(--text); }
 .card { background: var(--card); border-radius: var(--radius); box-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
@@ -17,7 +17,7 @@ body { color: var(--text); }
 .w2 { color: var(--muted); }
 .hd .badge .ic { width: 16px; height: 16px; margin-right: 5px; }
 
-/* ===== Lignes (carte entities), boutons, interrupteurs ===== */
+/* ===== Rows (entities card), buttons, switches ===== */
 .sub { color: var(--muted); }
 .row { border-bottom-color: var(--line); }
 .ri { display: table-cell; width: 40px; vertical-align: middle; color: var(--muted); }
@@ -30,7 +30,7 @@ body { color: var(--text); }
 .sec { color: var(--text); border-top-color: var(--line); }
 .row .btn.lk { color: var(--accent); }
 
-/* ===== Tuiles et boutons ===== */
+/* ===== Tiles and buttons ===== */
 .dc-def { --c: #03a9f4; }
 .dc-light { --c: #ffb300; }
 .dc-switch { --c: #2196f3; }
@@ -92,7 +92,7 @@ body { color: var(--text); }
 .tile.rt.tfi { flex-wrap: nowrap; }
 .subs .badge.io .ic { margin-right: 0; }
 
-/* ===== Badges et chips ===== */
+/* ===== Badges and chips ===== */
 .badge { display: inline-flex; align-items: center; background: var(--card); border: 1px solid var(--line); }
 .badge.on .ic { color: var(--c); }
 .badge .ic { color: inherit; }
@@ -135,7 +135,7 @@ body { color: var(--text); }
 .gn, .gauge .tn { color: var(--text); }
 .big .u { color: var(--muted); }
 
-/* ===== Météo ===== */
+/* ===== Weather ===== */
 .wx .tn { color: var(--muted); }
 .wsym .ic { width: 40px; height: 40px; color: #ffc107; margin: 0 auto; }
 .wcur .wsym { vertical-align: middle; }
@@ -144,7 +144,7 @@ body { color: var(--text); }
 .wl, .fn, .fl { color: var(--muted); }
 .wx .w2 .ic { display: inline-block; }
 
-/* ===== Graphiques et cartes statistiques ===== */
+/* ===== Graphs and statistics cards ===== */
 .chart { display: block; }
 .chart { margin-top: 8px; }
 .sp { display: block; width: 100%; overflow: visible; }
@@ -168,7 +168,7 @@ body { color: var(--text); }
 :root { --bg: #111318; --card: #1c1f26; --line: #2b2f38; --text: #e3e3e3; --muted: #9aa0a6; --accent: #03a9f4; --radius: 12px; }
 .tab.cur { border-bottom-color: var(--accent); }
 
-/* ===== stack-in-card (carte portail) : valeurs propres, à ne pas modifier ===== */
+/* ===== stack-in-card (gate card): own values, do not modify ===== */
 .sic > .tile.rt { flex-wrap: nowrap; display: flex; }
 .sic .hs { display: flex; }
 .sic .tile.rt { padding: 10px 12px; }

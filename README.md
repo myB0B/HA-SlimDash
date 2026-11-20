@@ -1,4 +1,4 @@
-# HA-SlimDash 0.8.69
+# HA-SlimDash 0.8.72
 
 ![SlimDash](docs/banner.jpg)
 
@@ -31,6 +31,7 @@ needs, larger buttons, a light theme for an e-reader), each under its own addres
 
 User documentation (options, pages, cameras, supported cards): [slimdash/DOCS.md](slimdash/DOCS.md).
 Store description: [slimdash/README.md](slimdash/README.md).
+Changes by version: [slimdash/CHANGELOG.md](slimdash/CHANGELOG.md).
 
 ## How it works
 
@@ -53,8 +54,8 @@ Store description: [slimdash/README.md](slimdash/README.md).
 SlimDash keeps the original layout (positions, sizes, row heights) and adapts the technique
 to the device, in three types chosen from the browser: type 1 (oldest devices: floats and
 inline blocks), type 2 (flexbox) and type 3 (CSS grid). The cards supported, the limits of
-each type and the deliberate limitations are described (in French) in
-[docs/rendus.md](docs/rendus.md).
+each type and the deliberate limitations are described in
+[docs/rendering.md](docs/rendering.md).
 
 Custom cards (Mushroom, Bubble Card, button-card…) are rendered from their main options only
 (entity, name, icon, color, layout, tap action). Advanced styling and scripted options are
@@ -106,8 +107,9 @@ type detected).
 | `slimdash/app/render.py` | Lovelace → HTML rendering of each card. |
 | `slimdash/app/theme.py` | Home Assistant themes → CSS. |
 | `slimdash/app/static/` | `s.css` (all types), `c-t2.css`, `c-t3.css`, `s.js` (ES5). |
+| `kindle-k4/` | Guide and files to show SlimDash on a non-touch Kindle 4 (jailbreak, KUAL, install script). |
 | `dev/` | Fake Home Assistant, test dashboards, rendering snapshots. |
-| `docs/` | Rendering notes and change review (French). |
+| `docs/` | Rendering notes ([rendering.md](docs/rendering.md)), detailed development log ([changelog.md](docs/changelog.md)) and illustrations. |
 
 ## Development on a PC
 

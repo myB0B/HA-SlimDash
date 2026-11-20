@@ -1,13 +1,13 @@
-/* SlimDash - feuille de base, toutes classes. Compatible vieux WebKit (Android 4.4, iOS 7-9) : ni flexbox, ni variables CSS, ni marge negative a cote d'un flottant. Les couleurs sont remplacees par le theme (theme.py). */
+/* SlimDash - base style sheet, all classes. Compatible with old WebKit (Android 4.4, iOS 7-9): no flexbox, no CSS variables, no negative margin next to a float. The colours are replaced by the theme (theme.py). */
 
-/* ===== Base, bandeau, onglets, grille des cartes ===== */
+/* ===== Base, banner, tabs, card grid ===== */
 * { -webkit-box-sizing: border-box; box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: #111; color: #eee; font-family: "Roboto", "Droid Sans", Arial, sans-serif; font-size: 18px; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: rgba(0,0,0,0); -webkit-user-select: none; user-select: none; }
 #dw { position: fixed; top: 10px; right: 10px; z-index: 1000; padding: 0; line-height: 0; }
-/* Encoche / caméra du téléphone (viewport-fit=cover) : le fond va jusqu'au bord de l'écran, le
-   contenu reste hors de l'encoche. Les vieux navigateurs ignorent env() : déclarations perdues. */
+/* Notch / phone camera (viewport-fit=cover): the background goes to the edge of the screen, the
+   content stays out of the notch. Old browsers ignore env(): declarations lost. */
 body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-/* encoche d'un seul côté (paysage) : même marge des deux côtés, le contenu reste centré */
+/* notch on one side only (landscape): same margin on both sides, the content stays centred */
 body { padding-left: max(env(safe-area-inset-left), env(safe-area-inset-right)); padding-right: max(env(safe-area-inset-left), env(safe-area-inset-right)); }
 #dw { top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right)); }
 #dot { display: inline-block; width: 10px; height: 10px; border-radius: 5px; background: #666; }
@@ -51,20 +51,20 @@ a.dl { color: #eee; text-decoration: none; font-size: 22px; padding: 16px; }
 .hd { line-height: 22px; padding: 2px 4px; margin: 4px 0 2px; }
 .hd { font-size: 16px; }
 #main { padding: 6px; overflow: hidden; max-width: 512px; margin: 0 auto; }
-/* Comme les vues « sections » de HA : colonnes de 500 px au plus, deux dès que la largeur
-   le permet (tablette en paysage). 8 px entre elles (comme entre les cartes) et 16 px sur les
-   côtés : 50 % chacune, la marge droite des cartes fait l'écart (d'où 8 px seulement à
-   droite de #main). Pourcentages seulement.
-   cols2 : la vue a au moins deux sections ; sinon la colonne unique reste centrée. */
+/* Like the HA "sections" views: columns of 500 px at most, two as soon as the width
+   allows (tablet in landscape). 8 px between them (like between the cards) and 16 px on the
+   sides: 50 % each, the right margin of the cards makes the gap (hence only 8 px on the
+   right of #main). Percentages only.
+   cols2: the view has at least two sections; otherwise the single column stays centred. */
 @media (min-width: 684px) {
   #main.cols2 { max-width: 1044px; padding-left: 16px; padding-right: 8px; }
-  /* pastille dans la marge de 16 px, sans toucher les cartes */
+  /* dot in the 16 px margin, without touching the cards */
   #dw { top: 8px; right: 3px; }
   #dw { top: calc(8px + env(safe-area-inset-top)); right: calc(3px + env(safe-area-inset-right)); }
   #main.cols2 .sect.c0 { float: left; clear: left; width: 50%; }
   #main.cols2 .sect.c1 { float: right; clear: right; width: 50%; margin-right: 0; }
   #main.cols2 > .badges, #main.cols2 > .hd, #main.cols2 > .card { clear: both; }
-  /* section sur plusieurs colonnes (column_span) : toute la largeur, sous les deux colonnes */
+  /* section spanning several columns (column_span): full width, under the two columns */
   #main.cols2 .sect.sp2, #main.cols2 .sect.sp3, #main.cols2 .sect.sp4 { float: none; clear: both; width: auto; }
 }
 .sect { margin-right: -8px; }
@@ -79,7 +79,7 @@ a.dl { color: #eee; text-decoration: none; font-size: 22px; padding: 16px; }
 .hd .badge { height: auto; line-height: normal; font-weight: normal; padding: 2px 8px; margin: 0 2px; }
 .hd .badge .ic { width: 16px; height: 16px; vertical-align: -3px; margin-right: 5px; }
 
-/* ===== Lignes (carte entities), boutons, interrupteurs ===== */
+/* ===== Rows (entities card), buttons, switches ===== */
 .row { display: table; width: 100%; }
 .row:last-child { border-bottom: 0; }
 .row .nm { display: table-cell; vertical-align: middle; }
@@ -118,7 +118,7 @@ a.dl { color: #eee; text-decoration: none; font-size: 22px; padding: 16px; }
 .sec { color: #e1e1e1; font-size: 14px; font-weight: 500; padding: 14px 0 8px 12px; margin-top: 8px; border-top: 1px solid #333; }
 .row .btn.lk { background: none; color: #03a9f4; font-weight: 500; padding: 8px; min-width: 0; margin: 0; }
 
-/* ===== Tuiles et boutons ===== */
+/* ===== Tiles and buttons ===== */
 .tile { min-height: 96px; text-align: center; }
 .tile .tn { font-size: 16px; color: #ccc; margin-top: 8px; }
 .tile .ts { font-size: 22px; margin-top: 6px; }
@@ -268,7 +268,7 @@ a.dl { color: #eee; text-decoration: none; font-size: 22px; padding: 16px; }
 .rt .chart.fi { float: right; clear: none; width: 45%; margin: 0 0 0 12px; }
 .subs .badge.io .ic { margin-right: 0; }
 
-/* ===== Badges et chips ===== */
+/* ===== Badges and chips ===== */
 .badges { text-align: center; margin-bottom: 6px; }
 .badge { display: inline-block; background: #1e1e1e; }
 .bn { color: #999; }
@@ -342,7 +342,7 @@ a.dl { color: #eee; text-decoration: none; font-size: 22px; padding: 16px; }
 .gic { margin: 14px 0; }
 .gs { line-height: 20px; margin-top: 0; }
 
-/* ===== Météo ===== */
+/* ===== Weather ===== */
 .wx .tn { font-size: 15px; color: #aaa; }
 .wcur { overflow: hidden; padding: 4px 0; }
 .wsym { font-size: 30px; display: inline-block; width: 44px; text-align: center; color: #ffd54f; }
@@ -384,7 +384,7 @@ a.dl { color: #eee; text-decoration: none; font-size: 22px; padding: 16px; }
 .wx .fd .fh { font-size: 16px; line-height: 22px; }
 .wx .fd .fl { font-size: 14px; line-height: 20px; color: #9b9b9b; }
 
-/* ===== Graphiques et cartes statistiques ===== */
+/* ===== Graphs and statistics cards ===== */
 .hg .row { min-height: 40px; }
 .chart { margin-top: 6px; }
 .sp { display: block; width: 100%; }
@@ -431,12 +431,12 @@ a.dl { color: #eee; text-decoration: none; font-size: 22px; padding: 16px; }
 .sl .sx .u { font-size: 60%; margin-left: 2px; }
 .fb.sgl .chart { margin: 0 4px; }
 
-/* ===== Horloge, markdown, caméras ===== */
+/* ===== Clock, markdown, cameras ===== */
 .clock { text-align: center; }
 .md ul { margin: 4px 0; padding-left: 22px; }
 .cam { position: relative; padding: 0; overflow: hidden; background: #000; min-height: 120px; }
 .cam .ci { display: block; width: 100%; height: auto; }
-/* carte picture : image pleine largeur ; hauteur imposée -> image en fond qui couvre la carte */
+/* picture card: full-width image; imposed height -> background image covering the card */
 .card.pic { position: relative; padding: 0; overflow: hidden; }
 .pic .pi { display: block; width: 100%; height: auto; }
 .pic .pb { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-repeat: no-repeat; background-position: center; -webkit-background-size: cover; background-size: cover; }
@@ -447,11 +447,11 @@ a.dl { color: #eee; text-decoration: none; font-size: 22px; padding: 16px; }
 .cam .badge { background: transparent; margin: 0 2px; }
 .clock { padding: 8px 12px; }
 .md { font-size: 14px; }
-/* carte Markdown text_only : ni fond, ni bordure, ni ombre ni effets du thème */
+/* Markdown card text_only: no background, border, shadow or theme effects */
 .card.txo { background: none !important; border: 0 !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 .card.txo:before, .card.txo:after { display: none !important; }
-/* texte seul, mesuré dans HA : marge de 2 px (haut, bas) et 4 px (côtés) ; titre # (h2 ici) de 28 px
-   sans marge, interligne normal */
+/* text alone, measured in HA: 2 px margin (top, bottom) and 4 px (sides); title # (h2 here) of 28 px
+   without margin, normal line height */
 .card.md.txo { padding: 2px 4px; }
 .card.md.txo h2 { font-size: 28px; line-height: normal; margin: 0; }
 .md { padding: 16px; line-height: 20px; }
@@ -478,7 +478,7 @@ a.dl { color: #eee; text-decoration: none; font-size: 22px; padding: 16px; }
 .na .bv, .na .ts { color: #777; }
 .cd { font-size: 16px; line-height: 20px; }
 
-/* ===== stack-in-card (carte portail) : valeurs propres, à ne pas modifier ===== */
+/* ===== stack-in-card (gate card): own values, do not modify ===== */
 .sic { padding: 2px 0; }
 .sic > .card { background: transparent !important; box-shadow: none !important; margin: 0; display: block; width: auto; border-radius: 0; }
 .sic .hs > .card { background: #2a2a2a; min-height: 60px; border-radius: 10px; }
@@ -497,12 +497,12 @@ a.dl { color: #eee; text-decoration: none; font-size: 22px; padding: 16px; }
 .sic .card { -webkit-box-sizing: content-box; box-sizing: content-box; }
 .sic .rt .tn { font-weight: normal; }
 
-/* carte light : cadran de luminosité (200 px au plus), ampoule au centre */
+/* light card: brightness dial (200 px at most), bulb in the centre */
 .card.lgc{text-align:center;padding:0}
 .lgw{width:200px;max-width:100%;margin:16px auto 0}
 .lgp{position:relative;height:0;padding-bottom:100%}
-/* bords plutôt que height:100% : le vieux WebKit (Android 4.4) calcule les % de hauteur sur la
-   hauteur 0 de .lgp au lieu de son padding -> anneau et ampoule invisibles */
+/* edges rather than height:100%: old WebKit (Android 4.4) computes the height % on the
+   0 height of .lgp instead of its padding -> ring and bulb invisible */
 .lgd{position:absolute;left:0;top:0;right:0;bottom:0}
 .lgd svg{display:block;width:100%;height:100%;overflow:visible}
 .lgd path{fill:none;stroke-width:24;stroke-linecap:round}

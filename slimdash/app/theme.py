@@ -1,14 +1,14 @@
-"""SlimDash - couleurs reprises du thème Home Assistant.
+"""SlimDash - colours taken from the Home Assistant theme.
 
-Le thème HA (variables CSS) est réduit à une petite palette de couleurs opaques,
-puis traduit en quelques règles CSS propres à chaque type d'appareil :
-règles explicites pour le type 1 (pas de variables CSS), variables pour les autres.
-Les transparences sont calculées ici : aucun effet coûteux côté navigateur.
+The HA theme (CSS variables) is reduced to a small palette of opaque colours,
+then translated into a few CSS rules specific to each device type:
+explicit rules for type 1 (no CSS variables), variables for the others.
+Transparencies are computed here: no costly effect on the browser side.
 """
 import os
 import re
 
-# Thème sombre par défaut de Home Assistant.
+# Home Assistant default dark theme.
 DEFAULTS = {
     "primary-background-color": "#111111",
     "ha-card-background": "#1c1c1c",
@@ -21,14 +21,14 @@ DEFAULTS = {
     "state-active-color": "#ffc107",
     "state-inactive-color": "#9e9e9e",
 }
-# Thème clair par défaut de Home Assistant (mode « clair »).
+# Home Assistant default light theme ("light" mode).
 LIGHT = dict(DEFAULTS, **{
     "primary-background-color": "#fafafa",
     "ha-card-background": "#ffffff",
     "primary-text-color": "#212121",
     "secondary-text-color": "#727272",
 })
-# groupe de couleur SlimDash -> (variables HA possibles, couleur HA par défaut ; None = « actif »)
+# SlimDash colour group -> (possible HA variables, default HA colour; None = "active")
 GROUPS = {
     "light": (("state-light-active-color", "state-light-on-color"), None),
     "switch": (("state-switch-active-color", "state-switch-on-color"), None),
@@ -44,7 +44,7 @@ NAMED = {"white": (255, 255, 255, 1.0), "black": (0, 0, 0, 1.0), "transparent": 
 
 
 def parse(c):
-    """Couleur CSS simple -> (r, g, b, a) ou None."""
+    """Simple CSS colour -> (r, g, b, a) or None."""
     if not isinstance(c, str):
         return None
     c = c.strip().lower()
@@ -75,7 +75,7 @@ def parse(c):
 
 
 def blend(fg, bg, alpha=None):
-    """fg posé sur bg (opaque) avec la transparence de fg, ou alpha si donné."""
+    """fg laid over bg (opaque) with the transparency of fg, or alpha if given."""
     a = fg[3] if alpha is None else alpha
     return tuple(int(round(fg[i] * a + bg[i] * (1 - a))) for i in range(3)) + (1.0,)
 
@@ -85,7 +85,7 @@ def hexc(c):
 
 
 def lum(c):
-    """Luminance relative (WCAG) d'une couleur (r, g, b)."""
+    """Relative luminance (WCAG) of a colour (r, g, b)."""
     def ch(x):
         x = x / 255.0
         return x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4
@@ -93,8 +93,8 @@ def lum(c):
 
 
 def readable(color, card, ratio=3.0):
-    """Sur un fond clair, assombrit une couleur trop claire (même teinte) jusqu'à un
-    contraste suffisant ; sur un fond sombre, la couleur est rendue telle quelle."""
+    """On a light background, darkens a colour that is too light (same hue) until the
+    contrast is sufficient; on a dark background, the colour is returned as is."""
     c, bg = parse(color), parse(card)
     if not c or not bg or lum(bg) < 0.5:
         return color
@@ -108,7 +108,7 @@ def readable(color, card, ratio=3.0):
 
 
 def resolve(tv, key, depth=0):
-    """Valeur d'une variable du thème, en suivant les var(--autre)."""
+    """Value of a theme variable, following var(--other)."""
     v = tv.get(key)
     if not isinstance(v, str) or depth > 5:
         return None
@@ -119,17 +119,17 @@ def resolve(tv, key, depth=0):
 
 
 def palette(theme_vars=None, mode="dark"):
-    """Variables d'un thème HA (ou None) -> palette de couleurs opaques (hex).
-    mode : « dark » ou « light » (pour les thèmes à deux modes et le thème par défaut)."""
+    """Variables of an HA theme (or None) -> palette of opaque colours (hex).
+    mode: "dark" or "light" (for two-mode themes and the default theme)."""
     light = mode == "light"
     base = LIGHT if light else DEFAULTS
     tv = dict(theme_vars or {})
     modes = tv.get("modes")
-    if isinstance(modes, dict):          # thème à deux modes : celui demandé
+    if isinstance(modes, dict):          # two-mode theme: the requested one
         if isinstance(modes.get(mode), dict):
             tv.update(modes[mode])
         elif not light and isinstance(modes.get("light"), dict):
-            tv.update(modes["light"])    # thème sans mode sombre
+            tv.update(modes["light"])    # theme without a dark mode
 
     def col(*keys):
         for k in keys:
@@ -169,7 +169,7 @@ def palette(theme_vars=None, mode="dark"):
     return p
 
 
-# Valeurs CSS reprises telles quelles d'un thème : rien qui puisse sortir de la règle.
+# CSS values taken as is from a theme: nothing that could escape the rule.
 _SAFE = re.compile(r"^[\w\s#(),.%/-]{1,300}$")
 _FILTER = re.compile(r"(?:blur|saturate|brightness|contrast)\(\s*[\d.]+(?:px|%)?\s*\)")
 
@@ -180,7 +180,7 @@ def _safe(v):
 
 
 def _block(cssx, sel):
-    """Contenu de la première règle « sel { ... } » d'une feuille card-mod."""
+    """Content of the first rule "sel { ... }" of a card-mod style sheet."""
     m = re.search(re.escape(sel) + r"\s*\{([^}]*)\}", cssx or "")
     return m.group(1) if m else ""
 
@@ -191,8 +191,8 @@ def _prop(block, name):
 
 
 def effects(tv, bg):
-    """Effets du thème (variables HA et feuille card-mod des cartes), s'ils existent :
-    fond translucide, bordure, ombre, flou d'arrière-plan, liseré et reflet."""
+    """Theme effects (HA variables and card-mod style sheet of the cards), if any:
+    translucent background, border, shadow, backdrop blur, edge highlight and reflection."""
     fx = {}
     cm = resolve(tv, "card-mod-card") or ""
     if not isinstance(cm, str):
@@ -226,16 +226,16 @@ def effects(tv, bg):
 
 
 def fx_css(p, cls):
-    """Effets du thème : tous en type 3 ; bordure, fond et halo en type 2.
-    Les cartes empilées dans un stack-in-card n'en ont pas (un seul fond, comme HA)."""
+    """Theme effects: all of them on type 3; border, background and glow on type 2.
+    Cards stacked in a stack-in-card have none (a single background, like HA)."""
     fx = p.get("fx") or {}
     out = []
     top = ".card"
-    # cartes empilées : sans effet propre (sélecteur simple, compris des anciens WebKit)
+    # stacked cards: no effect of their own (simple selector, understood by old WebKit)
     reset = (".sic .card{border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}"
              ".sic .card:before,.sic .card:after{display:none}")
     if cls in ("t2", "t3"):
-        # léger halo lumineux sur le fond de la page (calque fixe derrière le contenu), clair ou sombre
+        # slight glow on the page background (fixed layer behind the content), light or dark
         pr = "%d,%d,%d" % tuple(parse(p["prim"])[:3])
         out.append("html{background:%s}body{background:transparent}"
                    "body:before{content:\"\";position:fixed;top:0;left:0;right:0;bottom:0;z-index:-1;pointer-events:none;"
@@ -243,11 +243,11 @@ def fx_css(p, cls):
                    "radial-gradient(ellipse 65%% 55%% at 100%% 100%%,rgba(%s,%s),transparent 70%%),"
                    "radial-gradient(ellipse 50%% 40%% at 60%% 45%%,rgba(%s,.06),transparent 75%%)}" % (
                        p["bg"],
-                       # sombre : lueur claire ; clair : lueur bleutée plus soutenue (sur fond blanc)
+                       # dark: light glow; light: stronger bluish glow (on a white background)
                        "rgba(190,210,240,.20)" if p.get("dark") else "rgba(120,160,230,.22)",
                        pr, ".20" if p.get("dark") else ".16", pr))
-    # HA trace par défaut un trait de 1 px (couleur des séparateurs) autour des cartes,
-    # quand le thème ne donne ni bordure ni liseré
+    # HA draws a 1 px line by default (separator colour) around the cards,
+    # when the theme gives neither border nor edge highlight
     plain = cls in ("t2", "t3") and not fx.get("border") and not fx.get("edge")
     if plain:
         out.append("%s{border:1px solid %s}" % (top, p["line"]))
@@ -255,12 +255,12 @@ def fx_css(p, cls):
         if fx.get("border"):
             out.append("%s{border:%s}" % (top, fx["border"]))
         elif fx.get("edge"):
-            # liseré en dégradé : approché par une bordure claire en haut à gauche
+            # gradient edge highlight: approximated by a light border at the top left
             out.append("%s{border:1px solid rgba(255,255,255,.06);border-top-color:rgba(255,255,255,.28);"
                        "border-left-color:rgba(255,255,255,.18)}" % top)
         return "".join(out) + (reset if fx or plain else "")
     if cls == "t1":
-        # type 1 : pas d'effet de thème, seulement le trait fin de HA (clair comme sombre)
+        # type 1: no theme effect, only the thin HA line (light as well as dark)
         return "%s{border:1px solid %s}" % (top, p["line"]) + reset
     if cls != "t3":
         return ""
@@ -287,7 +287,7 @@ def fx_css(p, cls):
 
 
 def _mc_colors():
-    """Couleurs « mushroom » (option color des cartes), lues dans s.css."""
+    """"mushroom" colours (colour option of the cards), read from s.css."""
     try:
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "s.css"),
                   encoding="utf-8") as f:
@@ -300,7 +300,7 @@ MC = _mc_colors()
 
 
 def light_fix(p):
-    """Thème clair : fonds codés en sombre dans s.css (cartes, pastilles colorées, onglets)."""
+    """Light theme: backgrounds coded dark in s.css (cards, coloured dots, tabs)."""
     card = parse(p["card"])
     if not card or lum(card) < 0.5:
         return ""
@@ -313,13 +313,13 @@ def light_fix(p):
     return "".join(out)
 
 
-BG_SIZES = (960, 1600, 2048)       # côté le plus long de l'image de fond, selon la largeur d'écran
+BG_SIZES = (960, 1600, 2048)       # longest side of the background image, depending on the screen width
 
 
 def bg_css(p, name, bg):
-    """Image de fond d'une vue (type 3), comme HA : la couleur de fond de la page est posée par
-    dessus l'image, avec une transparence de (100 - opacité) %. Trois tailles d'image,
-    choisies par la largeur de l'écran (l'image est réduite par le relais /<nom>/img)."""
+    """Background image of a view (type 3), like HA: the page background colour is laid over
+    the image, with a transparency of (100 - opacity) %. Three image sizes,
+    chosen by the screen width (the image is shrunk by the /<name>/img relay)."""
     r, g, b = parse(p["bg"])[:3]
     a = round(1 - bg["opacity"] / 100.0, 2)
     veil = "linear-gradient(rgba(%d,%d,%d,%s),rgba(%d,%d,%d,%s))" % (r, g, b, a, r, g, b, a)
@@ -341,12 +341,12 @@ def bg_css(p, name, bg):
 
 
 def css(p, cls):
-    """Palette -> règles CSS (insérées dans la page, après les feuilles de style)."""
+    """Palette -> CSS rules (inserted in the page, after the style sheets)."""
     d = dict(p)
     common = (
         ".cam{background:#000}"
-        # image de carte picture : arrondie elle-même (le vieux WebKit ne la découpe pas
-        # selon les coins arrondis de la carte)
+        # picture card image: rounded itself (old WebKit does not clip it
+        # to the rounded corners of the card)
         ".pic .pi,.pic .pb{border-radius:%(rad)s}"
         ".btn{background:%(soft)s;color:%(text)s}.subs .badge{background:%(soft)s}"
         ".sic .hs>.card{background:%(soft)s}"
@@ -354,7 +354,7 @@ def css(p, cls):
         ".gi.on .gs{color:%(text)s}"
         ".nb .ts{color:%(sec)s}.row .btn.lk{background:none;color:%(prim)s}"
         ".tg{background:%(track)s}.tg.on{background:%(prim)s}"
-        # couleurs « primary » / « accent » d'une carte (option color) : celles du thème
+        # "primary" / "accent" colours of a card (colour option): those of the theme
         ".mc-primary .ic{color:%(prim)s!important}.ti.mc-primary{background:%(prim_bg)s!important}"
         ".mc-accent .ic{color:%(acc)s!important}.ti.mc-accent{background:%(acc_bg)s!important}"
     ) % d

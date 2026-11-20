@@ -29,9 +29,9 @@ span.tg.on 481,166 52x28 f14/400 rgb(255,255,255) bgrgb(0,154,199) r14px
 div.row 63,204 474x48 f14/400 rgb(255,255,255) bgrgba(0,0,0,0) r0px
 span.ri.dc-def 75,204 48x48 f14/400 rgb(255,255,255) bgrgba(0,0,0,0) r0px
 svg.ic 75,216 24x24 f14/400 rgb(68,115,158) bgrgba(0,0,0,0) r0px
-span.nm 123,204 226x48 f14/400 rgb(255,255,255) bgrgba(0,0,0,0) r0px
-span.rt 349,204 184x48 f14/400 rgb(255,255,255) bgrgba(0,0,0,0) r0px
-span.btn.lk 465,212 68x32 f14/500 rgb(0,154,199) bgrgba(0,0,0,0) r6px
+span.nm 123,204 254x48 f14/400 rgb(255,255,255) bgrgba(0,0,0,0) r0px
+span.rt 377,204 156x48 f14/400 rgb(255,255,255) bgrgba(0,0,0,0) r0px
+span.btn.lk 481,212 52x32 f14/500 rgb(0,154,199) bgrgba(0,0,0,0) r6px
 hr 63,258 474x1 f18/400 rgb(128,128,128) bgrgba(0,0,0,0) r0px
 div.sec 63,267 474x39 f14/500 rgb(255,255,255) bgrgba(0,0,0,0) r0px
 div.row 63,306 474x48 f14/400 rgb(255,255,255) bgrgba(0,0,0,0) r0px

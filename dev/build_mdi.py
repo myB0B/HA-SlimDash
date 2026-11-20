@@ -1,8 +1,8 @@
-"""Construit slimdash/app/mdi.txt.gz à partir du paquet npm @mdi/svg (Pictogrammers, Apache 2.0).
+"""Builds slimdash/app/mdi.txt.gz from the npm package @mdi/svg (Pictogrammers, Apache 2.0).
 
-    python dev/build_mdi.py <dossier « package » extrait de svg-x.y.z.tgz>
+    python dev/build_mdi.py <"package" folder extracted from svg-x.y.z.tgz>
 
-Une ligne par icône : « nom<TAB>tracé SVG » ; les alias : « alias<TAB>=nom ».
+One line per icon: "name<TAB>SVG path"; aliases: "alias<TAB>=name".
 """
 import gzip
 import json
@@ -31,4 +31,4 @@ for m in meta:
         lines.append("%s\t=%s" % (a, name))
 with gzip.open(out, "wt", encoding="utf-8", compresslevel=9) as g:
     g.write("\n".join(lines) + "\n")
-print("%d icônes, %d lignes, %d octets" % (n, len(lines), os.path.getsize(out)))
+print("%d icons, %d lines, %d bytes" % (n, len(lines), os.path.getsize(out)))

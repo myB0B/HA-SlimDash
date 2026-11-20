@@ -1,8 +1,8 @@
-"""Icônes envoyées en « sprite » : seules celles utilisées par la page sont incluses.
+"""Icons sent as a "sprite": only those used by the page are included.
 
-- Icônes Material Design (mdi:xxx), les mêmes que HA : clé « m-xxx », tracés lus dans
-  mdi.txt.gz (paquet @mdi/svg de Pictogrammers, licence Apache 2.0 ; voir dev/build_mdi.py).
-- Icônes maison (24x24, trait de 2 px) : météo et boutons internes (flèches, arrêt…).
+- Material Design icons (mdi:xxx), the same as HA: key "m-xxx", paths read from
+  mdi.txt.gz (Pictogrammers @mdi/svg package, Apache 2.0 licence; see dev/build_mdi.py).
+- House icons (24x24, 2 px stroke): weather and internal buttons (arrows, stop...).
 """
 import gzip
 import os
@@ -11,7 +11,7 @@ _MDI = None
 
 
 def _mdi():
-    """Table nom -> tracé, chargée une fois (≈ 3 Mo en mémoire)."""
+    """Name -> path table, loaded once (about 3 MB in memory)."""
     global _MDI
     if _MDI is None:
         table, alias = {}, {}
@@ -34,7 +34,7 @@ def _mdi():
 
 
 def mdi_key(name):
-    """« mdi:gate » -> « m-gate » si l'icône existe, sinon None."""
+    """"mdi:gate" -> "m-gate" if the icon exists, otherwise None."""
     name = str(name or "").strip().lower()
     for p in ("mdi:", "hass:"):
         if name.startswith(p):
@@ -109,7 +109,7 @@ ICONS = {
     "info": '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/>',
 }
 
-# Mots-clés des icônes Material (mdi:xxx) -> icône maison. L'ordre compte.
+# Keywords of the Material icons (mdi:xxx) -> house icon. Order matters.
 MDI_KEYWORDS = [
     ("weather-fog", "fog"), ("weather-hazy", "fog"), ("weather-night", "moon"),
     ("weather-partly", "cloudsun"), ("weather-pouring", "pour"), ("weather-rain", "rain"),
@@ -173,7 +173,7 @@ WEATHER = {
     "sunny": "sun", "windy": "wind", "windy-variant": "wind", "exceptional": "alert",
 }
 
-# Groupe de couleur (classe CSS « dc-xxx ») par domaine, comme les couleurs d'état de HA.
+# Colour group (CSS class "dc-xxx") per domain, like the HA state colours.
 COLOR_GROUP = {
     "light": "light", "switch": "switch", "input_boolean": "switch", "automation": "switch",
     "fan": "fan", "cover": "cover", "lock": "lock", "climate": "climate",
@@ -183,7 +183,7 @@ COLOR_GROUP = {
 }
 
 
-# Icône par défaut (sans icône choisie dans HA) : celle de HA, en Material Design.
+# Default icon (no icon chosen in HA): the HA one, in Material Design.
 DEFAULT_MDI = {
     "bulb": "lightbulb", "plug": "power-plug", "power": "power", "toggle": "toggle-switch-variant",
     "fan": "fan", "thermo": "thermometer", "drop": "water-percent", "bolt": "flash",
@@ -196,13 +196,13 @@ DEFAULT_MDI = {
     "car": "car", "walk": "walk", "info": "information-outline",
 }
 
-# Icône -> groupe de couleur, pour les interrupteurs (switch, input_boolean…).
+# Icon -> colour group, for switches (switch, input_boolean...).
 ICON_GROUP = {"bulb": "light", "fan": "fan", "shutter": "cover", "lock": "lock",
               "tv": "media", "speaker": "media", "vacuum": "vacuum", "thermo": "climate"}
 
 
 def house(name):
-    """Icône maison la plus proche d'un nom MDI (sert aux groupes de couleur)."""
+    """House icon closest to an MDI name (used for the colour groups)."""
     name = str(name or "").lower()
     for p in ("mdi:", "hass:", "m-"):
         if name.startswith(p):
@@ -215,23 +215,23 @@ def house(name):
 
 
 def from_mdi(name):
-    """Nom d'icône HA -> clé d'icône : la vraie icône MDI, à défaut l'icône maison approchante."""
+    """HA icon name -> icon key: the real MDI icon, otherwise the closest house icon."""
     return mdi_key(name) or house(name)
 
 
 def default(h):
-    """Icône maison -> icône MDI par défaut de HA (si connue)."""
+    """House icon -> HA default MDI icon (if known)."""
     m = DEFAULT_MDI.get(h)
     return ("m-" + m) if m and m in _mdi() else h
 
 
 def group_icon(key):
-    """Clé d'icône -> icône maison, pour ICON_GROUP."""
+    """Icon key -> house icon, for ICON_GROUP."""
     return house(key) if str(key).startswith("m-") else key
 
 
 def pick(eid, cfg_icon=None, attrs=None):
-    """Icône d'une entité : celle choisie dans HA, sinon celle par défaut du domaine."""
+    """Icon of an entity: the one chosen in HA, otherwise the domain default."""
     attrs = attrs or {}
     for cand in (cfg_icon, attrs.get("icon")):
         if isinstance(cand, str) and "{" not in cand:
@@ -248,7 +248,7 @@ def pick(eid, cfg_icon=None, attrs=None):
 
 
 def sprite(names):
-    """<svg> caché contenant les <symbol> des icônes utilisées."""
+    """Hidden <svg> holding the <symbol>s of the icons used."""
     if not names:
         return ""
     out = []

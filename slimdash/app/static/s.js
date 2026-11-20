@@ -1,10 +1,8 @@
-/* SlimDash - JavaScript ES5 uniquement (Android 4.x, vieux WebKit). */
+/* SlimDash - JavaScript ES5 only (Android 4.x, old WebKit). */
 (function () {
   var SD = window.SD;
   var conn = SD.c, errs = 0;
-  var JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-  var MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
-    'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  var L = SD.L;   /* texts in the language of Home Assistant (months, days, "ago" words) */
 
   function $(id) { return document.getElementById(id); }
   function qs(extra) {
@@ -14,17 +12,15 @@
   }
   function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
-  /* ---- horloge : formats de la carte digital-clock (HH:mm, cccc d LLLL yyyy...) ---- */
-  var JOURS3 = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
-  var MOIS3 = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  /* ---- clock: formats of the digital-clock card (HH:mm, cccc d LLLL yyyy...) ---- */
   function fmtDate(f, d) {
     return f.replace(/'([^']*)'|cccc|EEEE|ccc|EEE|LLLL|MMMM|LLL|MMM|LL|MM|dd|d|yyyy|yy|HH|H|hh|h|mm|ss|a/g, function (t, q) {
       var h12 = d.getHours() % 12 || 12;
       switch (t) {
-        case 'cccc': case 'EEEE': return JOURS[d.getDay()];
-        case 'ccc': case 'EEE': return JOURS3[d.getDay()];
-        case 'LLLL': case 'MMMM': return MOIS[d.getMonth()];
-        case 'LLL': case 'MMM': return MOIS3[d.getMonth()];
+        case 'cccc': case 'EEEE': return L.days[(d.getDay() + 6) % 7];
+        case 'ccc': case 'EEE': return L.days3[(d.getDay() + 6) % 7];
+        case 'LLLL': case 'MMMM': return L.months[d.getMonth()];
+        case 'LLL': case 'MMM': return L.months3[d.getMonth()];
         case 'LL': case 'MM': return pad(d.getMonth() + 1);
         case 'dd': return pad(d.getDate());
         case 'd': return '' + d.getDate();
@@ -41,26 +37,40 @@
       return q || '';
     });
   }
-  /* Temps écoulé, comme HA en français (même calcul que rel_fr() côté serveur). */
-  var TOT = [[45, 1, 'seconde'], [2700, 60, 'minute'], [79200, 3600, 'heure'], [432000, 86400, 'jour'],
-    [2419200, 604800, 'semaine'], [31536000, 2592000, 'mois'], [1e12, 31536000, 'an']];
-  function relFr(t, tot) {
+  /* Elapsed time (same computation as rel_time() / i18n.py on the server). */
+  var TOT = [[45, 1], [2700, 60], [79200, 3600], [432000, 86400], [2419200, 604800],
+    [31536000, 2592000], [1e12, 31536000]];
+  function pluralIndex(n) {
+    var r = L.pl, m10 = n % 10, m100 = n % 100;
+    if (r === 'fr') { return n < 2 ? 0 : 1; }
+    if (r === 'ru' || r === 'pl') {
+      if (r === 'pl' && n === 1) { return 0; }
+      if (r === 'ru' && m10 === 1 && m100 !== 11) { return 0; }
+      return (m10 >= 2 && m10 <= 4 && !(m100 >= 12 && m100 <= 14)) ? 1 : 2;
+    }
+    return n === 1 ? 0 : 1;
+  }
+  function count(u, n) {
+    var f = L.u[u];
+    return n + ' ' + f[Math.min(pluralIndex(n), f.length - 1)];
+  }
+  function relTime(t, tot) {
     var s = Math.max(0, Math.floor(new Date().getTime() / 1000 - t)), n, x, i;
     if (tot) {
       for (i = 0; i < TOT.length; i++) {
-        if (s < TOT[i][0]) {
-          n = i ? Math.max(1, Math.round(s / TOT[i][1])) : s;
-          return n + ' ' + TOT[i][2] + (n > 1 && TOT[i][2] !== 'mois' ? 's' : '');
-        }
+        if (s < TOT[i][0]) { return count(i, i ? Math.max(1, Math.round(s / TOT[i][1])) : s); }
       }
     }
-    if (s < 45) { x = s < 1 ? 'maintenant' : 'il y a ' + s + ' seconde' + (s > 1 ? 's' : ''); }
-    else if (s < 2700) { n = Math.max(1, Math.round(s / 60)); x = 'il y a ' + n + ' minute' + (n > 1 ? 's' : ''); }
-    else if (s < 79200) { n = Math.max(1, Math.round(s / 3600)); x = 'il y a ' + n + ' heure' + (n > 1 ? 's' : ''); }
-    else if (s < 432000) { n = Math.max(1, Math.round(s / 86400)); x = n === 1 ? 'hier' : (n === 2 ? 'avant-hier' : 'il y a ' + n + ' jours'); }
-    else if (s < 2419200) { n = Math.max(1, Math.round(s / 604800)); x = n === 1 ? 'la semaine dernière' : 'il y a ' + n + ' semaines'; }
-    else if (s < 31536000) { n = Math.max(1, Math.round(s / 2592000)); x = n === 1 ? 'le mois dernier' : 'il y a ' + n + ' mois'; }
-    else { n = Math.max(1, Math.round(s / 31536000)); x = n === 1 ? 'l’année dernière' : 'il y a ' + n + ' ans'; }
+    if (s < 45) { x = s < 1 ? L.now : L.past.replace('%s', count(0, s)); }
+    else if (s < 2700) { x = L.past.replace('%s', count(1, Math.max(1, Math.round(s / 60)))); }
+    else if (s < 79200) { x = L.past.replace('%s', count(2, Math.max(1, Math.round(s / 3600)))); }
+    else if (s < 432000) {
+      n = Math.max(1, Math.round(s / 86400));
+      x = n === 1 ? L.d1 : (n === 2 && L.d2 ? L.d2 : L.past.replace('%s', count(3, n)));
+    }
+    else if (s < 2419200) { n = Math.max(1, Math.round(s / 604800)); x = n === 1 ? L.w1 : L.past.replace('%s', count(4, n)); }
+    else if (s < 31536000) { n = Math.max(1, Math.round(s / 2592000)); x = n === 1 ? L.m1 : L.past.replace('%s', count(5, n)); }
+    else { n = Math.max(1, Math.round(s / 31536000)); x = n === 1 ? L.y1 : L.past.replace('%s', count(6, n)); }
     return x.charAt(0).toUpperCase() + x.slice(1);
   }
 
@@ -69,7 +79,7 @@
     var i, els, t;
     els = document.querySelectorAll('.ago');
     for (i = 0; i < els.length; i++) {
-      t = relFr(+els[i].getAttribute('data-t'), els[i].getAttribute('data-m') === 't');
+      t = relTime(+els[i].getAttribute('data-t'), els[i].getAttribute('data-m') === 't');
       if (els[i].innerHTML !== t) { els[i].innerHTML = t; }
     }
     els = document.querySelectorAll('.cl');
@@ -79,10 +89,10 @@
     }
   }
 
-  /* ---- état de la connexion : vert = OK, orange = HA perdu, rouge = SlimDash injoignable ---- */
+  /* ---- connection state: green = OK, orange = HA lost, red = SlimDash unreachable ---- */
   function setDot(cls) { var d = $('dot'); if (d) { d.className = cls; } }
 
-  /* ---- mises à jour (long polling) ---- */
+  /* ---- updates (long polling) ---- */
   function apply(u) {
     var id, el, x;
     for (id in u) {
@@ -96,12 +106,12 @@
     }
   }
 
-  /* un champ en cours de modification n'est pas remplacé par la mise à jour */
+  /* a field being edited is not replaced by the update */
   function editing(el) {
     var a = document.activeElement;
     return a && a !== document.body && /^(INPUT|SELECT)$/.test(a.tagName) && el.contains(a);
   }
-  /* ---- champs modifiables (nombre, liste, heure, texte) : envoyés au changement ---- */
+  /* ---- editable fields (number, list, time, text): sent on change ---- */
   function edSend(el) {
     var x = new XMLHttpRequest();
     x.onreadystatechange = function () {
@@ -128,7 +138,7 @@
     if (t && t.type === 'range' && t.nextSibling) { t.nextSibling.innerHTML = t.value.replace('.', ','); }
   }, false);
 
-  /* ---- couleur réelle d'une lampe : "#icône|#fond" ; "" = couleur du thème ---- */
+  /* ---- real colour of a lamp: "#icon|#background"; "" = theme colour ---- */
   function paint(el, v) {
     var p = v ? v.split('|') : ['', ''], t = el, k, i, s;
     if (SD.cl !== 't1') {
@@ -149,8 +159,8 @@
     for (i = 0; i < l.length; i++) { paint(l[i], l[i].getAttribute('data-c')); }
   })();
 
-  /* SD.iv = 0 : temps réel (requête en attente côté serveur).
-     SD.iv > 0 : une petite requête toutes les SD.iv secondes (Kindle...). */
+  /* SD.iv = 0: real time (request pending on the server side).
+     SD.iv > 0: one small request every SD.iv seconds (Kindle...). */
   var nextTimer = null, busy = false;
   function schedule(ms) {
     if (nextTimer) { clearTimeout(nextTimer); }
@@ -201,17 +211,17 @@
       el.className = (' ' + el.className + ' ').replace(' ' + cls + ' ', ' ').replace(/^\s+|\s+$/g, '');
     }, ms);
   }
-  /* vieux WebKit (Android 4.4) : un toucher sur une icône <use> a pour cible un
-     SVGElementInstance (sans getAttribute) -> on remonte à l'élément <use> */
+  /* old WebKit (Android 4.4): a touch on a <use> icon targets a
+     SVGElementInstance (without getAttribute) -> go up to the <use> element */
   function real(el) {
     return el && !el.getAttribute && el.correspondingUseElement ? el.correspondingUseElement : el;
   }
   function target(el) {
     el = real(el);
     while (el && el.getAttribute) {
-      /* champ modifiable : le navigateur gère le toucher (clavier, liste) */
+      /* editable field: the browser handles the touch (keyboard, list) */
       if (/^(INPUT|SELECT|OPTION)$/.test(el.tagName || '')) { return null; }
-      /* un curseur gère lui-même le toucher : pas d'action de la carte en dessous */
+      /* a slider handles the touch itself: no action of the card underneath */
       if (el.getAttribute('data-s') !== null) { return null; }
       if (el.getAttribute('data-a') !== null || el.getAttribute('data-n') !== null ||
           el.getAttribute('data-p') !== null) { return el; }
@@ -222,7 +232,7 @@
   function act(el) {
     var n = el.getAttribute('data-n'), list, i, x, p = el.getAttribute('data-p');
     if (p !== null) {
-      /* couleurs d'une lampe : m = ouvrir la barre de teintes, v = valider (refermer) */
+      /* lamp colours: m = open the hue bar, v = validate (close) */
       x = el.parentNode.parentNode.childNodes;
       x[0].style.display = p === 'm' ? 'none' : 'block';
       x[1].style.display = p === 'm' ? 'block' : 'none';
@@ -232,7 +242,7 @@
       location.href = SD.base + '?view=' + encodeURIComponent(n) + (SD.key ? '&k=' + encodeURIComponent(SD.key) : '');
       return;
     }
-    /* mise à jour optimiste immédiate */
+    /* immediate optimistic update */
     list = el.getAttribute('data-o') !== null ? [el] : el.querySelectorAll('[data-o]');
     for (i = 0; i < list.length; i++) { swap(list[i]); }
     flash(el, 'prs', 300);
@@ -246,7 +256,7 @@
         for (i = 0; i < list.length; i++) { swap(list[i]); }
         flash(el, 'err', 1500);
       } else if (SD.iv) {
-        /* mode périodique : on récupère tout de suite le vrai état */
+        /* periodic mode: the real state is fetched right away */
         schedule(1000);
       }
     };
@@ -255,7 +265,7 @@
     x.send('a=' + el.getAttribute('data-a'));
   }
 
-  /* Tap rapide : évite le délai de 300 ms des vieux navigateurs tactiles. */
+  /* Quick tap: avoids the 300 ms delay of old touch browsers. */
   var sx = 0, sy = 0, st = 0, touched = false;
   document.addEventListener('touchstart', function (e) {
     var t = e.touches[0];
@@ -270,7 +280,7 @@
     el = target(e.target);
     if (el) { e.preventDefault(); lastTap = new Date().getTime(); act(el); }
   }, false);
-  /* ---- curseurs des lampes (luminosité, température) : glissés, envoyés au relâcher ---- */
+  /* ---- lamp sliders (brightness, temperature): dragged, sent on release ---- */
   var drag = null, lastTouch = 0;
   function slider(el) {
     el = real(el);
@@ -280,7 +290,7 @@
     }
     return null;
   }
-  /* cadran rond (carte light) : seul l'anneau réagit, pas le centre (ampoule) */
+  /* round dial (light card): only the ring reacts, not the centre (bulb) */
   function slHit(el, x, y) {
     var r;
     if (el.getAttribute('data-r') === null) { return true; }
@@ -303,7 +313,7 @@
   function slSet(el, x, y) {
     var r = el.getBoundingClientRect(), f, k, i, c;
     if (el.getAttribute('data-r') !== null) { slRound(el, x, y); return; }
-    if (el.getAttribute('data-h') !== null) {     /* barre de teintes : le repère reste dans la barre */
+    if (el.getAttribute('data-h') !== null) {     /* hue bar: the marker stays in the bar */
       r = { left: r.left + 7, width: r.width - 14 };
     }
     f = (x - r.left) / r.width;
@@ -317,9 +327,9 @@
     el.setAttribute('data-v', Math.round(f * 1000));
     if (el.getAttribute('data-h') !== null) { hueSet(el, f); }
   }
-  /* barre de teintes : la case de validation prend la teinte, la lampe suit.
-     Un seul envoi à la fois, toujours avec la dernière position : sinon un envoi plus
-     ancien peut arriver après et laisser la lampe sur une teinte précédente. */
+  /* hue bar: the validation box takes the hue, the lamp follows.
+     Only one send at a time, always with the latest position: otherwise an older send
+     may arrive afterwards and leave the lamp on a previous hue. */
   var hueBusy = false, hueNext = null, hueLast = null;
   function hueSend(el) {
     var v = el.getAttribute('data-v');
@@ -384,8 +394,8 @@
     if (drag && !touchRecent()) { slEnd(drag); drag = null; }
   }, false);
 
-  /* Les vieux navigateurs Android envoient quand même un « clic » après le toucher :
-     on l'ignore pendant 1 s, sinon l'action part deux fois (allumé puis éteint). */
+  /* Old Android browsers still send a "click" after the touch:
+     it is ignored for 1 s, otherwise the action fires twice (on then off). */
   var lastTap = 0;
   document.addEventListener('click', function (e) {
     var el = target(e.target);
@@ -395,11 +405,11 @@
     act(el);
   }, false);
 
-  /* ---- caméras ----
-     Images : nouvelle image toutes les data-iv secondes ; l'image chargée remplace l'ancienne
-     (pas de second téléchargement), en pause quand la page est cachée ou que la vidéo tourne.
-     Vidéo (caméras Frigate, data-live) : flux MSE de go2rtc relayé par SlimDash. Par défaut en
-     type 3 ; &live=1 la force, &live=0 la coupe. Sans MediaSource/H.264 : images. */
+  /* ---- cameras ----
+     Images: new image every data-iv seconds; the loaded image replaces the old one
+     (no second download), paused when the page is hidden or the video is running.
+     Video (Frigate cameras, data-live): go2rtc MSE stream relayed by SlimDash. Default on
+     type 3; &live=1 forces it, &live=0 turns it off. Without MediaSource/H.264: images. */
   function hidden() { return document.hidden || document.webkitHidden; }
   var LIVE = (function () {
     var m = /[?&]live=([01])/.exec(location.search);
@@ -416,12 +426,12 @@
     return ok.join(',');
   })();
   var lives = [];
-  /* &info=1 : mode de chaque caméra entre parenthèses après son titre (live ou rafraîchissement) */
+  /* &info=1: mode of each camera in brackets after its title (live or refresh) */
   var CAMINFO = /[?&]info=1/.test(location.search);
   function camInfo(card) {
     var ct = card.querySelector('.ct'), img = card.querySelector('img.ci'), f;
     if (!CAMINFO || !img) { return; }
-    if (!ct) {      /* carte sans titre : bandeau avec le nom de la caméra */
+    if (!ct) {      /* card without a title: banner with the camera name */
       f = card.querySelector('.cf');
       if (!f) { f = document.createElement('div'); f.className = 'cf'; card.appendChild(f); }
       ct = document.createElement('span');
@@ -462,7 +472,7 @@
         sb.appendBuffer(q.shift());
       } catch (e) { stop(true); }
     }
-    function near() {   /* rester au plus près du direct */
+    function near() {   /* stay as close as possible to live */
       var b = sb && sb.buffered;
       if (b && b.length && b.end(b.length - 1) - v.currentTime > 3) { v.currentTime = b.end(b.length - 1) - 0.5; }
     }
@@ -508,22 +518,22 @@
       }, false);
       v.src = URL.createObjectURL(ms);
       card.insertBefore(v, card.querySelector('.cf'));
-      /* plus rien depuis 20 s : on retombe sur les images et on réessaie plus tard */
+      /* nothing for 20 s: fall back to images and retry later */
       dog = setInterval(function () { if (new Date().getTime() - last > 20000) { stop(true); } }, 5000);
     }
     lives.push({start: start, stop: stop});
     start();
   }
 
-  /* Une image n'est demandée qu'une fois la précédente affichée, au plus vite toutes les
-     data-iv ms : un appareil lent ralentit de lui-même. data-fps : images/s obtenues (5 s).
-     Une seule image par caméra : on change son adresse (unique, &t=), l'ancienne reste
-     affichée jusqu'à l'arrivée de la nouvelle. Pas d'image de préchargement : chaque image
-     décodée en plus (≈ 0,9 Mo) fait monter la mémoire du vieux WebKit jusqu'au plantage. */
+  /* An image is only requested once the previous one is displayed, at most every
+     data-iv ms: a slow device slows itself down. data-fps: images/s obtained (5 s).
+     A single image per camera: its address is changed (unique, &t=), the old one stays
+     displayed until the new one arrives. No preload image: each extra decoded image
+     (about 0.9 MB) makes the old WebKit memory grow until it crashes. */
   function now() { return new Date().getTime(); }
-  /* Plafond : 1 image/s en type 1 (au-delà, le vieux WebKit sature sa mémoire et plante),
-     3 en type 2 (iPad Air iOS 12 : tient 5 mais chauffe).
-     &fps=N dans l'adresse : essai d'un autre plafond (caméras Frigate seulement). */
+  /* Ceiling: 1 image/s on type 1 (beyond that, old WebKit saturates its memory and crashes),
+     3 on type 2 (iPad Air iOS 12: handles 5 but gets hot).
+     &fps=N in the address: trying another ceiling (Frigate cameras only). */
   var FPS = (function () {
     var m = /[?&]fps=(\d+(?:[.,]\d+)?)/.exec(location.search);
     return m ? parseFloat(m[1].replace(',', '.')) : ({t1: 1, t2: 3}[SD.cl] || 0);
@@ -551,7 +561,7 @@
         seen = [];
         setTimeout(next, Math.max(iv * 2, 5000));
       };
-      img.src = base + '&t=' + (flip = 1 - flip);   // 2 adresses fixes : le navigateur Android 4.4 plante après ~850 adresses uniques
+      img.src = base + '&t=' + (flip = 1 - flip);   // 2 fixed addresses: the Android 4.4 browser crashes after ~850 unique addresses
     }
     setTimeout(next, iv);
     camInfo(card);
@@ -569,8 +579,8 @@
     }, false);
   }
 
-  /* Certains navigateurs Android 4.4 ignorent calc() : les largeurs « 50 % - 8 px » des cartes
-     et des rangées horizontales retombent alors sur des pourcentages approchés. On les pose en px. */
+  /* Some Android 4.4 browsers ignore calc(): the "50 % - 8 px" widths of the cards
+     and horizontal rows then fall back to approximate percentages. They are set in px. */
   var noCalc = (function () {
     var t = document.createElement('div');
     t.style.width = '-webkit-calc(10px + 1px)';
@@ -603,12 +613,12 @@
   clock();
   setInterval(clock, 10000);
   if (SD.cv) { schedule(300); } else { setDot(SD.c ? 'ok' : 'ha'); }
-  /* Rechargement complet de temps en temps : évite les fuites mémoire des vieux navigateurs
-     (toutes les heures quand la page montre des caméras). */
+  /* Full reload from time to time: avoids the memory leaks of old browsers
+     (every hour when the page shows cameras). */
   setTimeout(function () { location.reload(); }, (cams.length ? 1 : 6) * 3600 * 1000);
 })();
 
-/* Plein écran au premier toucher (le navigateur l'exige après un geste) ; repris après une sortie. */
+/* Full screen on the first touch (the browser requires a gesture); resumed after an exit. */
 (function () {
   var d = document.documentElement;
   var req = d.requestFullscreen || d.webkitRequestFullscreen;

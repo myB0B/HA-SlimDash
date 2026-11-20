@@ -1,12 +1,12 @@
-"""Non-régression du rendu SlimDash : « photo » des mesures de chaque élément.
+"""SlimDash rendering regression test: a "photo" of the measurements of every element.
 
-    python dev/snapshot.py save     enregistre la référence dans dev/snapshots/
-    python dev/snapshot.py check    compare le rendu actuel à la référence
+    python dev/snapshot.py save     stores the reference in dev/snapshots/
+    python dev/snapshot.py check    compares the current rendering with the reference
 
-Le script lance le faux Home Assistant (données figées), SlimDash, puis Edge ou Chrome
-sans fenêtre (600 x 1024). Pour chaque classe d'appareil et chaque vue de test, il relève
-la position, la taille, la police et les couleurs de tous les éléments de la page.
-Une ligne par élément : un écart = une ligne différente. Aucune dépendance en plus d'aiohttp.
+The script starts the fake Home Assistant (frozen data), SlimDash, then a headless Edge or
+Chrome (600 x 1024). For each device class and each test view, it records the position, size,
+font and colours of every element of the page. One line per element: a difference = a
+different line. No dependency besides aiohttp.
 """
 import asyncio
 import json
@@ -168,28 +168,28 @@ def main():
         if mode == "save":
             with open(path, "w", encoding="utf-8", newline="\n") as f:
                 f.write(text + "\n")
-            print("%-18s %4d éléments" % (key, text.count("\n") + 1))
+            print("%-18s %4d elements" % (key, text.count("\n") + 1))
             continue
         try:
             with open(path, encoding="utf-8") as f:
                 ref = f.read().rstrip("\n").split("\n")
         except FileNotFoundError:
-            print("%-18s pas de référence (lancer « save »)" % key)
+            print("%-18s no reference (run 'save')" % key)
             bad += 1
             continue
         cur = text.split("\n")
         diffs = [(i, a, b) for i, (a, b) in enumerate(zip(ref, cur)) if a != b]
         if len(ref) != len(cur):
-            diffs.append((min(len(ref), len(cur)), "%d éléments" % len(ref), "%d éléments" % len(cur)))
+            diffs.append((min(len(ref), len(cur)), "%d elements" % len(ref), "%d elements" % len(cur)))
         if diffs:
             bad += 1
-            print("%-18s %d écart(s)" % (key, len(diffs)))
+            print("%-18s %d difference(s)" % (key, len(diffs)))
             for i, a, b in diffs[:6]:
-                print("    #%d\n      réf : %s\n      act : %s" % (i, a, b))
+                print("    #%d\n      ref: %s\n      cur: %s" % (i, a, b))
         else:
-            print("%-18s identique (%d éléments)" % (key, len(cur)))
+            print("%-18s identical (%d elements)" % (key, len(cur)))
     if mode != "save":
-        print("\n%s" % ("Aucun écart." if not bad else "%d vue(s) avec écarts." % bad))
+        print("\n%s" % ("No difference." if not bad else "%d view(s) with differences." % bad))
         sys.exit(1 if bad else 0)
 
 

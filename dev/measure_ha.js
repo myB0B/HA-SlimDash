@@ -1,8 +1,8 @@
-/* Mesure des cartes d'ORIGINE dans Home Assistant, pour les comparer à SlimDash.
-   Ouvrir la vue dans un navigateur à 600 px de large, coller ce script dans la console.
-   Une ligne JSON par carte : type, boîte [x, y, largeur, hauteur], textes
-   [texte, x, y, largeur, taille, graisse, couleur], icônes [genre, x, y, largeur, hauteur, couleur],
-   fond et arrondi de la carte. Les positions sont relatives à la carte. */
+/* Measures the ORIGINAL cards in Home Assistant, to compare them with SlimDash.
+   Open the view in a browser 600 px wide, paste this script into the console.
+   One JSON line per card: type, box [x, y, width, height], texts
+   [text, x, y, width, size, weight, colour], icons [kind, x, y, width, height, colour],
+   background and radius of the card. Positions are relative to the card. */
 (function () {
   function kids(n) {
     var a = [];

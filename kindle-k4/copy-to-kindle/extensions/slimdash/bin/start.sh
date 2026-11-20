@@ -1,5 +1,5 @@
 #!/bin/sh
-# Lancé par KUAL : détache slimdash.sh (KUAL s'arrête avec l'interface du Kindle).
+# Started by KUAL: detaches slimdash.sh (KUAL stops together with the Kindle interface).
 S=/mnt/us/extensions/slimdash/bin/slimdash.sh
 echo "$(date '+%d/%m %H:%M:%S') start.sh" >> /mnt/us/extensions/slimdash/slimdash.log
 if command -v nohup >/dev/null 2>&1; then

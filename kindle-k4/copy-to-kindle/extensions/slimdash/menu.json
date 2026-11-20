@@ -4,7 +4,7 @@
       "name": "SlimDash",
       "priority": 0,
       "items": [
-        {"name": "Démarrer l'affichage", "priority": 1, "action": "bin/start.sh"}
+        {"name": "Start display", "priority": 1, "action": "bin/start.sh"}
       ]
     }
   ]

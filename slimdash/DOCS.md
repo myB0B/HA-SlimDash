@@ -6,6 +6,26 @@ SlimDash publishes Home Assistant dashboards as ultra-light HTML pages for old d
 Each device opens a simple address, such as `http://192.168.1.10:8099/kitchen`, in its
 browser.
 
+## Warning
+
+**Use these old devices at your own risk!** An old device comes with a few risks:
+
+- **Battery overheating**: a worn-out battery left on charge all day can heat up and swell.
+- **Network security**: an old system no longer gets security updates and relies on outdated
+  certificates. Its known flaws come with it onto your local network.
+- **Plain HTTP pages**: the access key travels unencrypted on your network. Keep
+  `allowed_networks` limited to your devices and never open port 8099 to the Internet.
+- **Sensitive controls**: anyone standing in front of the device can use what the dashboard
+  shows. Avoid locks, alarm or garage door on a screen left in free access.
+
+I strongly recommend managing the device's charging, isolating the device on your network and
+blocking its access to the Internet. A few more good habits:
+
+- Check the device now and then for a swelling battery. If the battery can be removed, you can
+  power the device directly; a smart plug driven by Home Assistant can keep the charge between
+  20 % and 80 %.
+- Keep the device dedicated: no personal accounts (Google, mail) and no apps you do not need.
+
 ![SlimDash on four old devices][devices1]
 
 *SlimDash on four old devices: an iPad Air (iOS 11, Safari), a Kindle 4 (non-touch), a Samsung Galaxy Tab 3 and a Redmi 9A (Android 11, Chromite browser).*
@@ -151,7 +171,7 @@ greyscale PNG image (16 levels, e-ink friendly), without any browser:
 - Options: `w` and `h` (screen size, default 600 × 800), `rotate=90` or `270` (landscape
   device), `k` (access key). `/<dashboard>?type=0` redirects to the image.
 - Kindle 4: a KUAL extension that shows the image full screen, without screen saver, is in the
-  `kindle/` folder of the SlimDash repository (French guide included).
+  `kindle-k4/` folder of the SlimDash repository (guide included).
 
 ## Connection dot
 
@@ -164,17 +184,65 @@ The small dot in the top right corner shows the connection state:
 
 The page reloads by itself when the dashboard changes in Home Assistant.
 
+## Language
+
+SlimDash uses the language set in Home Assistant (Settings > System > General). English is the
+default, and is used when the language is not supported.
+
+- **State labels** ("On", "Closed", "Not detected"...) are the ones Home Assistant gives for its own
+  language, so they follow it for every language Home Assistant supports.
+- **Everything SlimDash writes itself** follows the same language: number format (decimal and
+  thousands separators), month and day names (digital clock, forecast), relative times ("3 minutes
+  ago", "Yesterday") and short dates.
+- **Supported languages** for these texts: English (`en`), French (`fr`), German (`de`), Spanish
+  (`es`), Italian (`it`), Portuguese (`pt`), Dutch (`nl`), Russian (`ru`), Polish (`pl`) and Hungarian (`hu`). A regional
+  variant such as `pt-BR` uses the base language. Any other language falls back to English for these
+  texts (the state labels still come from Home Assistant).
+- **Your own texts** (card titles, names, markdown) are shown as you wrote them, in any language.
+- The language is read when SlimDash connects to Home Assistant: restart the app after changing it.
+
+Adding a language is a small change (one entry in `app/i18n.py`): contributions are welcome.
+
 ## Supported cards
 
-**Built-in cards**: tile (with features: trend graph, cover buttons, light colors, brightness
-and temperature sliders), button, entity, sensor, gauge, energy self-sufficiency gauge,
-entities, glance, markdown (templates), heading, badges, weather forecast, thermostat,
-history graph, statistics graph, picture (image file, uploaded image or image entity), picture
-glance, picture entity, horizontal stack, vertical stack, grid and conditional cards.
+Each card is recognised by its `type` in the dashboard YAML.
 
-**Custom cards**: button-card, Bubble Card (buttons, sub-buttons, separators), Mushroom entity,
-template and chips cards, stack-in-card, statistics-graph-chart-card, digital-clock,
-meteofrance-weather-card, advanced-camera-card and webrtc-camera (camera image).
+**Built-in cards**
+
+| `type` | Notes |
+|---|---|
+| `tile` | Features: trend graph, cover buttons, light colours, brightness and temperature sliders. |
+| `button` | Name, state, tap action. |
+| `entity`, `sensor` | Value, with a graph if the card has one. |
+| `gauge` | Half-circle gauge, value in the arc. |
+| `energy-self-sufficiency-gauge` | Self-sufficiency rate of the day. |
+| `entities` | Rows, header switch, editable values (number, list, time, text). |
+| `glance` | |
+| `markdown` | Templates; `text_only` shows the text without a card. |
+| `heading` | Title and badges. |
+| `weather-forecast` | Current weather and forecast. |
+| `thermostat` | |
+| `light` | Brightness dial. |
+| `history-graph`, `statistics-graph` | Curves and bars. |
+| `picture` | Image file, image uploaded in Home Assistant, or image entity. |
+| `picture-glance`, `picture-entity` | Camera image or picture. |
+| `horizontal-stack`, `vertical-stack`, `grid` | Layout cards. |
+| `conditional` | |
+
+**Custom cards**
+
+| `type` | Notes |
+|---|---|
+| `custom:button-card` | Name, state, tap action. JavaScript templates `[[[ ]]]` are ignored. |
+| `custom:bubble-card` | Buttons, sub-buttons, separators. Pop-ups are ignored. |
+| `custom:mushroom-entity-card` | Tile; texts and colours computed by Home Assistant. |
+| `custom:mushroom-template-card` | Tile; Jinja templates computed by Home Assistant. |
+| `custom:mushroom-chips-card` | Chips, including the weather chip. |
+| `custom:stack-in-card` | One card containing the stacked cards. |
+| `custom:statistics-graph-chart-card` | Values and curves or bars. |
+| `custom:digital-clock` | Date and time formats, sizes and weights. |
+| `custom:meteofrance-weather-card` | Weather card. |
+| `custom:advanced-camera-card`, `custom:webrtc-camera` | Camera image. |
 
 For custom cards, SlimDash supports the main options (entity, name, icon, color, layout,
 tap action), not every option of each card: the aim is to stay simple and light on old devices.
@@ -182,9 +250,9 @@ Advanced styling and scripted options are ignored, and the card is shown with it
 
 Any other card is shown as a readable list of its entities.
 
-**Not supported**: map, iframe, media players, calendars, energy dashboard cards, pop-ups,
-auto-entities, sliders other than light sliders, card-mod styles (except background and height),
-JavaScript templates of button-card (`[[[ ]]]`), background images.
+**Not supported**: `map`, `iframe`, media players, calendars, energy dashboard cards, pop-ups,
+`custom:auto-entities`, sliders other than light sliders, card-mod styles (except background and
+height), and the background image of a view on types 1 and 2 (type 3 only).
 
 ## Cameras
 
@@ -222,26 +290,6 @@ A page with cameras reloads itself every hour, to keep old browsers healthy.
 
 Debloating your device gives an amazing performance boost: disable every app you do not need
 at all, so the device keeps its memory and processor for the browser.
-
-## Warning
-
-**Use these old devices at your own risk!** An old device comes with a few risks:
-
-- **Battery overheating**: a worn-out battery left on charge all day can heat up and swell.
-- **Network security**: an old system no longer gets security updates and relies on outdated
-  certificates. Its known flaws come with it onto your local network.
-- **Plain HTTP pages**: the access key travels unencrypted on your network. Keep
-  `allowed_networks` limited to your devices and never open port 8099 to the Internet.
-- **Sensitive controls**: anyone standing in front of the device can use what the dashboard
-  shows. Avoid locks, alarm or garage door on a screen left in free access.
-
-I strongly recommend managing the device's charging, isolating the device on your network and
-blocking its access to the Internet. A few more good habits:
-
-- Check the device now and then for a swelling battery. If the battery can be removed, you can
-  power the device directly; a smart plug driven by Home Assistant can keep the charge between
-  20 % and 80 %.
-- Keep the device dedicated: no personal accounts (Google, mail) and no apps you do not need.
 
 ## Troubleshooting
 

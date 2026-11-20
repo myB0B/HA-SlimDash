@@ -1,6 +1,6 @@
-"""Faux Home Assistant (WebSocket + caméra) pour tester SlimDash sur le PC, sans jeton.
+"""Fake Home Assistant (WebSocket + camera) to test SlimDash on the PC, without a token.
 
-    python dev/mock_ha.py            (écoute sur le port 8124 ; MOCK_FIXTURE = config Lovelace)
+    python dev/mock_ha.py            (listens on port 8124; MOCK_FIXTURE = Lovelace config)
     set HA_URL=http://127.0.0.1:8124 & set HA_TOKEN=x & python slimdash/app/slimdash.py
 """
 import asyncio

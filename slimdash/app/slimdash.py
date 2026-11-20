@@ -1,10 +1,10 @@
-"""SlimDash - dashboards Home Assistant en HTML léger pour vieux navigateurs.
+"""SlimDash - Home Assistant dashboards as light HTML for old browsers.
 
-Une seule connexion WebSocket vers Home Assistant (abonnée aux seules entités
-des vues publiées), rendu HTML côté serveur mis en cache, et mises à jour
-envoyées aux navigateurs par "long polling" (XMLHttpRequest, Android 4).
+A single WebSocket connection to Home Assistant (subscribed only to the entities
+of the published views), server-side HTML rendering kept in cache, and updates
+sent to the browsers by "long polling" (XMLHttpRequest, Android 4).
 
-Chaque dashboard publié a un nom, qui sert d'URL : http://IP:8099/<nom>
+Each published dashboard has a name, which is used as its URL: http://IP:8099/<name>
 """
 import asyncio
 import hashlib
@@ -23,20 +23,21 @@ from urllib.parse import quote
 from aiohttp import ClientSession, WSMsgType, web
 
 import eink
+import i18n
 import icons
 import render
 import theme
 
-VERSION = "0.8.69"
+VERSION = "0.8.72"
 HERE = os.path.dirname(os.path.abspath(__file__))
 log = logging.getLogger("slimdash")
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 RESERVED = {"static", "debug", "diag", "u", "a", "cam", "live"}
-LONGPOLL = 25  # durée max (s) d'une requête de mise à jour en attente
+LONGPOLL = 25  # max duration (s) of a pending update request
 
 
 def _static_tag():
-    """Empreinte des fichiers statiques : le navigateur recharge CSS/JS dès qu'ils changent."""
+    """Fingerprint of the static files: the browser reloads CSS/JS as soon as they change."""
     import hashlib
     h = hashlib.md5()
     folder = os.path.join(HERE, "static")
@@ -50,10 +51,10 @@ STATIC_TAG = _static_tag()
 
 
 # --------------------------------------------------------------------------
-# Types d'appareils t1 / t2 / t3 (d'après l'en-tête User-Agent, lu à la 1re requête)
+# Device types t1 / t2 / t3 (from the User-Agent header, read on the 1st request)
 # --------------------------------------------------------------------------
 def strip_prefix(name, prefix):
-    """Comme HA : « Portail Voiture » sur l'appareil « Portail » -> « Voiture »."""
+    """Like HA: "Gate Car" on the device "Gate" -> "Car"."""
     if not name or not prefix:
         return name
     low = name.lower()
@@ -67,12 +68,12 @@ def strip_prefix(name, prefix):
 
 TYPE_IDS = ("t1", "t2", "t3")
 TYPE_LABEL = {"t1": "Type 1", "t2": "Type 2", "t3": "Type 3"}
-# Essai d'un type depuis l'adresse : &type=1, 2 ou 3.
+# Trying a type from the address: &type=1, 2 or 3.
 TYPES = {"1": "t1", "2": "t2", "3": "t3"}
 
 
 def classify(ua):
-    """-> (moteur, version, type). Inconnu = t1 (le plus sûr)."""
+    """-> (engine, version, type). Unknown = t1 (the safest)."""
     ua = ua or ""
 
     def level(v, mid, top):
@@ -112,9 +113,9 @@ def device_type(dash, req):
 # Options
 # --------------------------------------------------------------------------
 def parse_path(path):
-    """« lovelace/kindle » -> (url_path HA ou None, vue ou None)."""
+    """"lovelace/kindle" -> (HA url_path or None, view or None)."""
     p = str(path or "").strip()
-    p = re.sub(r"^[a-z]+://[^/]+", "", p)        # URL complète collée
+    p = re.sub(r"^[a-z]+://[^/]+", "", p)        # full URL pasted
     p = p.split("?")[0].split("#")[0].strip("/")
     parts = [x for x in p.split("/") if x]
     if not parts:
@@ -146,44 +147,44 @@ def load_options():
     for d in opts["dashboards"]:
         name = str(d.get("name") or "").strip().lower()
         if not NAME_RE.match(name) or name in RESERVED or name in seen:
-            log.warning("Nom de dashboard invalide ou en double ignoré : %r", d.get("name"))
+            log.warning("Invalid or duplicate dashboard name ignored: %r", d.get("name"))
             continue
         seen.add(name)
-        # « dashboard » (0.3) ; « path » = ancien format dashboard/vue (0.2).
+        # "dashboard" (0.3); "path" = old dashboard/view format (0.2).
         url_path, view_in_url = parse_path(d.get("dashboard") or d.get("path"))
         views = [x.strip() for x in str(d.get("views") or "").split(",") if x.strip()]
         if not views and view_in_url:
             views = [view_in_url]
-        # Rafraîchissement : 0 = temps réel ; sinon toutes les N s (5 à 3600).
+        # Refresh: 0 = real time; otherwise every N s (5 to 3600).
         try:
             refresh = int(d.get("refresh") or 0)
         except (TypeError, ValueError):
             refresh = 0
         if refresh > 0:
             refresh = max(5, min(3600, refresh))
-        # « type 1|2|3 » (anciennes valeurs ancien|intermediaire|moderne encore acceptées)
+        # "type 1|2|3" (old values ancien|intermediaire|moderne still accepted)
         device = {"ancien": "1", "intermediaire": "2", "moderne": "3"}.get(
             str(d.get("device") or "auto").strip().lower(), str(d.get("device") or "auto"))
         device = device.strip().lower()
         device = TYPES.get(device.replace("type", "").strip(), device)
         if device not in ("auto",) + TYPE_IDS:
             device = "auto"
-        # Thème propre au dashboard ; à défaut l'ancienne option globale (avant 0.8.20).
-        # Thème : celui de chaque vue (HA), ou le thème par défaut de HA en clair / en sombre.
-        # (valeurs anglaises depuis 0.8.49 ; les françaises ha clair|ha sombre|vue restent acceptées)
+        # Theme specific to the dashboard; otherwise the old global option (before 0.8.20).
+        # Theme: that of each view (HA), or the HA default theme, light or dark.
+        # (English values since 0.8.49; the French ha clair|ha sombre|vue are still accepted)
         th = {"ha light": "light", "ha dark": "dark", "ha clair": "light", "ha sombre": "dark"}.get(
             str(d.get("theme") or "").strip().lower(), "view")
         dashes.append({"name": name, "url_path": url_path, "views": views, "theme": th,
                        "refresh": max(0, refresh), "device": device,
                        "tabs_bottom": bool(d.get("tabs_bottom")),
                        "label": "%s / %s" % (url_path or "lovelace",
-                                             ",".join(views) or "1re vue")})
+                                             ",".join(views) or "1st view")})
     opts["_dashes"] = dashes
     if os.environ.get("SUPERVISOR_TOKEN"):
         opts["ws_url"] = "ws://supervisor/core/websocket"
         opts["api_url"] = "http://supervisor/core/api"
         opts["token"] = os.environ["SUPERVISOR_TOKEN"]
-    else:  # exécution hors Home Assistant (développement)
+    else:  # running outside Home Assistant (development)
         base = os.environ.get("HA_URL", opts.get("ha_url", "http://homeassistant.local:8123"))
         opts["ws_url"] = base.rstrip("/").replace("http", "ws", 1) + "/api/websocket"
         opts["api_url"] = base.rstrip("/") + "/api"
@@ -195,30 +196,30 @@ def load_options():
         try:
             nets.append(ipaddress.ip_network(str(n).strip(), strict=False))
         except ValueError:
-            log.warning("Réseau autorisé invalide ignoré : %s", n)
+            log.warning("Invalid allowed network ignored: %s", n)
     opts["_nets"] = nets
     return opts
 
 
 # --------------------------------------------------------------------------
-# État partagé (Hub) et état de chaque dashboard publié (Dash)
+# Shared state (Hub) and state of each published dashboard (Dash)
 # --------------------------------------------------------------------------
 class Hub:
     def __init__(self, opts):
         self.opts = opts
         self.states = {}
         self.reg = {}
-        self.tpl = {}       # clé de template -> texte rendu par HA
-        self.fc = {}        # "fc:entité:type" -> prévisions météo
-        self.hist = {}      # "h:entité:heures" -> valeurs (graphiques)
-        self.palette = theme.palette(None)     # couleurs du thème par défaut de HA
-        self.themes = {}                        # nom de thème -> variables (HA)
-        self.default_theme = ""                 # thème par défaut de HA
-        self.palettes = {}                      # (thème, clair/sombre) -> couleurs
-        self.theme_names = []                   # thèmes déclarés dans HA
-        self.frigate = ""                       # URL de Frigate joignable ("" : caméras via HA)
-        self.frigate_fps = {}                   # caméra Frigate -> images/s de sa détection
-        self.look = ""                          # signature thème + libellés
+        self.tpl = {}       # template key -> text rendered by HA
+        self.fc = {}        # "fc:entity:type" -> weather forecasts
+        self.hist = {}      # "h:entity:hours" -> values (graphs)
+        self.palette = theme.palette(None)     # colours of the HA default theme
+        self.themes = {}                        # theme name -> variables (HA)
+        self.default_theme = ""                 # HA default theme
+        self.palettes = {}                      # (theme, light/dark) -> colours
+        self.theme_names = []                   # themes declared in HA
+        self.frigate = ""                       # reachable Frigate URL ("": cameras through HA)
+        self.frigate_fps = {}                   # Frigate camera -> frames/s of its detection
+        self.look = ""                          # theme + labels signature
         self.connected = False
         self.version = 1
         self.boot = "%x" % int(time.time())
@@ -230,8 +231,8 @@ class Hub:
         return self.version
 
     def palette_for(self, dash, view=None):
-        """Couleurs d'une vue : thème HA clair / sombre imposé, sinon thème de la vue
-        (à défaut celui par défaut de HA ; mode sombre pour un thème à deux modes)."""
+        """Colours of a view: HA light / dark theme if forced, otherwise the view theme
+        (otherwise the HA default one; dark mode for a two-mode theme)."""
         how = dash.spec.get("theme") if dash else "view"
         if how in ("light", "dark"):
             key = ("", how)
@@ -247,7 +248,7 @@ class Hub:
         p = self.palette_for(dash, view)
         out = theme.css(p, cls)
         bg = (view or {}).get("bg")
-        if bg and dash and cls == "t3":      # image de fond de la vue : type 3 seulement
+        if bg and dash and cls == "t3":      # view background image: type 3 only
             out += theme.bg_css(p, quote(dash.name), bg)
         return "<style>%s</style>" % out
 
@@ -266,7 +267,7 @@ class Hub:
             self.need_event.set()
 
     def needs(self):
-        """Ce que les rendus déjà construits demandent à HA."""
+        """What the renderings already built ask HA for."""
         tpl, fc, hist = {}, set(), {}
         for d in self.dashes.values():
             for v in d.variants.values():
@@ -277,14 +278,14 @@ class Hub:
 
 
 class Variant:
-    """Rendu d'un dashboard pour une type d'appareil (construit à la demande)."""
+    """Rendering of a dashboard for a device type (built on demand)."""
 
     def __init__(self, dash, cls):
         b = render.Builder(dash, dash.spec["url_path"], cls)
         views = b.build(dash.config or {}, dash.indices)
         self.cls = cls
         self.body = {v["index"]: v["body"] for v in views}
-        for v in dash.views:      # icônes des onglets
+        for v in dash.views:      # tab icons
             if v.get("ic"):
                 b.icons.add(v["ic"])
         self.sprite = b.sprite()
@@ -320,7 +321,7 @@ class Variant:
             try:
                 v = self.slots[i][1]()
             except Exception:
-                log.exception("Erreur de calcul d'un élément")
+                log.exception("Error computing an element")
                 continue
             if v != self.slot_val[i]:
                 if newver is None:
@@ -346,12 +347,12 @@ class Dash:
         self.tab_indices = []
         self.error = None
         self.build_no = 0
-        self.views = []         # titres/chemins des vues rendues (sans le HTML)
-        self.bgs = {}           # clé -> image de fond d'une vue (relayée par /<nom>/img)
+        self.views = []         # titles/paths of the rendered views (without the HTML)
+        self.bgs = {}           # key -> background image of a view (relayed by /<name>/img)
         self.variants = {}      # type d'appareil -> Variant
-        self.wanted = set()     # types déjà demandés par un appareil
+        self.wanted = set()     # types already requested by a device
 
-    # Interface attendue par render.Builder (données partagées par tous les dashboards)
+    # Interface expected by render.Builder (data shared by all the dashboards)
     @property
     def states(self):
         return self.hub.states
@@ -374,7 +375,7 @@ class Dash:
 
     @property
     def palette(self):
-        v = self.views[0] if self.views else None   # graphiques, lampes : 1re vue
+        v = self.views[0] if self.views else None   # graphs, lamps: 1st view
         return self.hub.palette_for(self, v)
 
     @property
@@ -396,7 +397,7 @@ class Dash:
         return out
 
     def img(self, key):
-        """Image d'une carte picture de ce dashboard (seules celles-ci sont relayées)."""
+        """Image of a picture card of this dashboard (only these are relayed)."""
         if key in self.bgs:
             return self.bgs[key]
         for v in self.variants.values():
@@ -405,8 +406,8 @@ class Dash:
         return None
 
     def view_bg(self, v):
-        """Image de fond d'une vue (« Arrière-plan » de HA) : clé de l'image relayée par
-        /<nom>/img et réglages. Utilisée en type 3 seulement."""
+        """Background image of a view (HA "Background"): key of the image relayed by
+        /<name>/img and settings. Used on type 3 only."""
         b = v.get("background")
         if not isinstance(b, dict):
             return None
@@ -432,7 +433,7 @@ class Dash:
             v = Variant(self, cls)
             self.variants[cls] = v
             self.wanted.add(cls)
-            log.info("[%s] rendu « %s » : %d éléments dynamiques, %d actions, %d icônes",
+            log.info("[%s] rendering '%s': %d dynamic elements, %d actions, %d icons",
                      self.name, cls, len(v.slots), len(v.actions), v.sprite.count("<symbol"))
             self.hub.wake()
         return v
@@ -442,12 +443,12 @@ class Dash:
         self.bgs = {}
         self.views = [{"index": i, "path": str(views[i].get("path") or i),
                        "bg": self.view_bg(views[i]),
-                       "title": views[i].get("title") or views[i].get("path") or "Vue %d" % (i + 1),
+                       "title": views[i].get("title") or views[i].get("path") or "View %d" % (i + 1),
                        "subview": bool(views[i].get("subview")),
                        "theme": views[i].get("theme") if isinstance(views[i].get("theme"), str)
                        else "",
-                       # Onglet comme HA : icône seule si la vue a une icône, icône et nom si
-                       # « show_icon_and_title » est coché, sinon nom seul.
+                       # Tab like HA: icon only if the view has an icon, icon and name if
+                       # "show_icon_and_title" is ticked, otherwise name only.
                        "ic": icons.from_mdi(views[i].get("icon")) if views[i].get("icon") else None,
                        "both": bool(views[i].get("show_icon_and_title") and views[i].get("icon")
                                     and views[i].get("title"))}
@@ -457,7 +458,7 @@ class Dash:
         self.variants = {}
         for cls in sorted(self.wanted):
             self.variant(cls)
-        for v in old:          # les pages ouvertes vont se recharger (cv a changé)
+        for v in old:          # the open pages will reload (cv changed)
             v.notify()
 
     def changed(self, keys):
@@ -466,7 +467,7 @@ class Dash:
 
 
 def downsample(points, start, end, n):
-    """[(horodatage, valeur)] -> n moyennes régulières (valeur reportée si pas de mesure)."""
+    """[(timestamp, value)] -> n regular averages (value carried over if no measurement)."""
     pts = []
     for t, v in points:
         try:
@@ -547,7 +548,7 @@ class HAClient:
 
     async def call_service(self, domain, service, data=None, target=None):
         if not self.ws or self.ws.closed:
-            raise RuntimeError("Home Assistant non connecté")
+            raise RuntimeError("Home Assistant not connected")
         msg = {"type": "call_service", "domain": domain, "service": service,
                "service_data": data or {}}
         if target:
@@ -567,28 +568,28 @@ class HAClient:
                         delay = 2
             except asyncio.CancelledError:
                 raise
-            except Exception as e:  # coupure réseau, HA qui redémarre...
-                log.warning("Connexion Home Assistant perdue : %s", e)
+            except Exception as e:  # network cut, HA restarting...
+                log.warning("Home Assistant connection lost: %s", e)
             self.ws = None
             self.hub.set_connected(False)
             for f in self.pending.values():
                 if not f.done():
-                    f.set_exception(ConnectionError("déconnecté"))
+                    f.set_exception(ConnectionError("disconnected"))
             self.pending.clear()
             self.handlers.clear()
-            log.info("Nouvelle tentative dans %d s", delay)
+            log.info("Retrying in %d s", delay)
             await asyncio.sleep(delay)
             delay = min(delay * 2, 30)
 
     async def session(self, ws):
         msg = await ws.receive_json(timeout=20)
         if msg.get("type") != "auth_required":
-            raise RuntimeError("réponse inattendue : %s" % msg)
+            raise RuntimeError("unexpected response: %s" % msg)
         await ws.send_str(json.dumps({"type": "auth", "access_token": self.opts["token"]}))
         msg = await ws.receive_json(timeout=20)
         if msg.get("type") != "auth_ok":
-            raise RuntimeError("Authentification refusée par Home Assistant")
-        log.info("Connecté à Home Assistant %s", msg.get("ha_version", ""))
+            raise RuntimeError("Authentication refused by Home Assistant")
+        log.info("Connected to Home Assistant %s", msg.get("ha_version", ""))
         reader = asyncio.create_task(self.reader(ws))
         maint = None
         try:
@@ -628,7 +629,7 @@ class HAClient:
                 try:
                     h(d.get("event"))
                 except Exception:
-                    log.exception("Erreur de traitement d'un événement")
+                    log.exception("Error processing an event")
 
     # -- abonnements ------------------------------------------------------
     async def setup(self):
@@ -649,7 +650,7 @@ class HAClient:
             dash.error = err
             if err:
                 log.error("[%s] %s", dash.name, err)
-            # Seulement la vue publiée (+ celles qu'elle ouvre) : charge minimale sur HA.
+            # Only the published view (+ those it opens): minimal load on HA.
             dash._new_tabs, dash._new_indices = render.select_views(config, dash.spec["views"])
             views = config.get("views") or []
             selected = [views[i] for i in dash._new_indices]
@@ -657,7 +658,7 @@ class HAClient:
             ents = render.collect_entities(selected)
             all_entities |= ents
             selected_all.extend(selected)
-            log.info("[%s] %s : %d vue(s), %d entité(s)", dash.name,
+            log.info("[%s] %s: %d view(s), %d entity(ies)", dash.name,
                      dash.spec["label"], len(dash._new_indices), len(ents))
         entities = sorted(all_entities)
         hub.reg = await self.load_registry(entities, selected_all)
@@ -705,11 +706,11 @@ class HAClient:
             try:
                 await asyncio.wait_for(first, 15)
             except asyncio.TimeoutError:
-                log.warning("Pas d'état initial reçu")
+                log.warning("No initial state received")
         for eid in list(hub.states):
             if eid not in seen:
                 hub.states.pop(eid, None)
-        log.info("%d entité(s) suivie(s) au total", len(entities))
+        log.info("%d entity(ies) tracked in total", len(entities))
 
         for dash in hub.dashes.values():
             new_json = json.dumps([dash._new_config, dash._new_indices, dash._new_tabs, reg_json],
@@ -722,7 +723,7 @@ class HAClient:
                 dash.rebuild()
             else:
                 dash.changed(set(hub.states))
-        # Nouvelle connexion : templates et prévisions sont à ré-abonner.
+        # New connection: templates and forecasts must be subscribed again.
         self.subscribed = set()
         self.hist_due = 0
         await self.sync_needs()
@@ -730,16 +731,16 @@ class HAClient:
             await self.subscribe({"type": "subscribe_events", "event_type": "lovelace_updated"},
                                  self._lovelace_updated)
         except Exception as e:
-            log.warning("Suivi des modifications des dashboards impossible : %s", e)
+            log.warning("Cannot follow dashboard changes: %s", e)
         try:
             await self.subscribe({"type": "subscribe_events", "event_type": "themes_updated"},
                                  self._themes_updated)
         except Exception as e:
-            log.warning("Suivi des modifications du thème impossible : %s", e)
+            log.warning("Cannot follow theme changes: %s", e)
 
     async def load_frigate(self):
-        """Adresse de Frigate : option frigate_url, sinon celle de l'intégration Frigate de HA
-        (titre de son entrée, ex. « ccab4aaf-frigate:5000 ») ; vérifiée par /api/version."""
+        """Frigate address: frigate_url option, otherwise that of the HA Frigate integration
+        (title of its entry, e.g. "ccab4aaf-frigate:5000"); checked with /api/version."""
         hub = self.hub
         cands = []
         if hub.opts.get("frigate_url"):
@@ -750,7 +751,7 @@ class HAClient:
                     if e.get("domain") == "frigate" and e.get("state") == "loaded" and e.get("title"):
                         cands.append(e["title"])
             except Exception as e:
-                log.debug("Entrées Frigate illisibles : %s", e)
+                log.debug("Frigate entries unreadable: %s", e)
         found = ""
         for u in cands:
             u = u.rstrip("/")
@@ -762,13 +763,13 @@ class HAClient:
                         found = u
                         log.info("Frigate %s : %s", (await r.text()).strip(), u)
                         break
-                    log.warning("Frigate %s : réponse %d (port 5000 attendu)", u, r.status)
+                    log.warning("Frigate %s: response %d (port 5000 expected)", u, r.status)
             except Exception as e:
                 log.warning("Frigate %s injoignable : %s", u, e)
         if not found:
-            log.info("Pas de Frigate : caméras via Home Assistant")
+            log.info("No Frigate: cameras through Home Assistant")
         fps = {}
-        if found:   # latest.jpg change au rythme de la détection : inutile de demander plus vite
+        if found:   # latest.jpg changes at the pace of the detection: no point asking faster
             try:
                 async with ClientSession() as sess, sess.get(found + "/api/config", timeout=6) as r:
                     for n, c in ((await r.json()).get("cameras") or {}).items():
@@ -779,10 +780,10 @@ class HAClient:
         hub.frigate_fps = fps
         n = sum(1 for v in hub.reg.values() if v.get("fc"))
         if found and n:
-            log.info("%d caméra(s) servie(s) par Frigate", n)
+            log.info("%d camera(s) served by Frigate", n)
 
     async def load_look(self):
-        """Couleurs du thème et libellés d'état de Home Assistant."""
+        """Theme colours and state labels of Home Assistant."""
         hub = self.hub
         themes, dflt = {}, ""
         try:
@@ -790,7 +791,7 @@ class HAClient:
             themes = res.get("themes") or {}
             dflt = res.get("default_dark_theme") or res.get("default_theme") or ""
         except Exception as e:
-            log.warning("Lecture des thèmes impossible : %s", e)
+            log.warning("Cannot read themes: %s", e)
         hub.theme_names = sorted(n for n, v in themes.items() if isinstance(v, dict))
         hub.themes = {n: v for n, v in themes.items() if isinstance(v, dict)}
         hub.default_theme = dflt if dflt in hub.themes else ""
@@ -799,20 +800,22 @@ class HAClient:
         for d in hub.dashes.values():
             how = d.spec.get("theme")
             if how in ("light", "dark"):
-                log.info("Thème du dashboard %s : HA %s", d.name,
-                         "clair" if how == "light" else "sombre")
+                log.info("Dashboard %s theme: HA %s", d.name,
+                         "light" if how == "light" else "dark")
                 continue
             for v in d.views:
                 name = v.get("theme") or ""
                 ok = name in hub.themes
                 if name and not ok and name not in ("default", "Backend-selected"):
-                    log.warning("Thème « %s » (vue %s de %s) introuvable", name, v["title"], d.name)
-                log.info("Thème de la vue %s (%s) : %s", v["title"], d.name,
-                         name if ok else "défaut de Home Assistant")
+                    log.warning("Theme '%s' (view %s of %s) not found", name, v["title"], d.name)
+                log.info("View %s theme (%s): %s", v["title"], d.name,
+                         name if ok else "Home Assistant default")
         try:
             cfg = await self.send({"type": "get_config"}) or {}
+            if i18n.set_language(cfg.get("language")):
+                log.info("Language: %s", i18n.LANG)
             res = await self.send({"type": "frontend/get_translations",
-                                   "language": cfg.get("language") or "fr",
+                                   "language": cfg.get("language") or "en",
                                    "category": "entity_component"}) or {}
             tr = {}
             for k, v in (res.get("resources") or {}).items():
@@ -822,20 +825,20 @@ class HAClient:
             if tr:
                 render.TR.clear()
                 render.TR.update(tr)
-                log.info("%d libellés d'état repris de Home Assistant", len(tr))
+                log.info("%d state labels taken from Home Assistant", len(tr))
         except Exception as e:
-            log.warning("Lecture des libellés d'état impossible : %s", e)
-        hub.look = json.dumps([hub.palette, sorted(hub.palettes.items()), len(render.TR)],
+            log.warning("Cannot read state labels: %s", e)
+        hub.look = json.dumps([hub.palette, sorted(hub.palettes.items()), len(render.TR), i18n.LANG],
                               sort_keys=True)
 
     def _themes_updated(self, ev):
-        log.info("Thèmes modifiés dans Home Assistant : rechargement")
+        log.info("Themes changed in Home Assistant: reloading")
         if self.reload_task and not self.reload_task.done():
             return
         self.reload_task = asyncio.create_task(self._reload_soon())
 
     async def maintenance(self):
-        """Abonnements à la demande + historique des graphiques (toutes les 5 min)."""
+        """On-demand subscriptions + graph history (every 5 min)."""
         ev = self.hub.need_event
         while True:
             await self.sync_needs()
@@ -844,7 +847,7 @@ class HAClient:
                 try:
                     await self.fetch_history()
                 except Exception as e:
-                    log.warning("Historique indisponible : %s", e)
+                    log.warning("History unavailable: %s", e)
             try:
                 await asyncio.wait_for(ev.wait(), 30)
             except asyncio.TimeoutError:
@@ -861,7 +864,7 @@ class HAClient:
                 await self.subscribe({"type": "render_template", "template": tpl},
                                      self._tpl_handler(key))
             except Exception as e:
-                log.warning("Template refusé par HA : %s", e)
+                log.warning("Template refused by HA: %s", e)
         for eid, ftype in fcs:
             if ("f", eid, ftype) in self.subscribed:
                 continue
@@ -871,13 +874,13 @@ class HAClient:
                                       "entity_id": eid, "forecast_type": ftype},
                                      self._fc_handler("fc:%s:%s" % (eid, ftype)))
             except Exception as e:
-                log.warning("Prévisions indisponibles pour %s : %s", eid, e)
+                log.warning("Forecasts unavailable for %s: %s", eid, e)
         if any(k not in self.hub.hist for k in hists):
             self.hist_due = 0
 
     async def fetch_energy(self):
-        """Taux d'autosuffisance du jour, calculé comme la carte énergie de HA :
-        (1 - réseau / consommation de la maison) x 100, depuis minuit (fuseau de HA)."""
+        """Self-sufficiency rate of the day, computed like the HA energy card:
+        (1 - grid / house consumption) x 100, since midnight (HA time zone)."""
         prefs = await self.send({"type": "energy/get_prefs"}) or {}
         grid_in, grid_out, solar, bat_in, bat_out = set(), set(), set(), set(), set()
         for s in prefs.get("energy_sources") or []:
@@ -885,14 +888,14 @@ class HAClient:
             if t == "grid":
                 grid_in.add(s.get("stat_energy_from"))
                 grid_out.add(s.get("stat_energy_to"))
-                for f in s.get("flow_from") or []:      # ancien format des préférences
+                for f in s.get("flow_from") or []:      # old format of the preferences
                     grid_in.add(f.get("stat_energy_from"))
                 for f in s.get("flow_to") or []:
                     grid_out.add(f.get("stat_energy_to"))
             elif t == "solar":
                 solar.add(s.get("stat_energy_from"))
             elif t == "battery":
-                bat_in.add(s.get("stat_energy_from"))    # décharge : vers la maison
+                bat_in.add(s.get("stat_energy_from"))    # discharge: towards the house
                 bat_out.add(s.get("stat_energy_to"))     # charge
         groups = [g - {None, ""} for g in (grid_in, grid_out, solar, bat_in, bat_out)]
         ids = sorted(set().union(*groups))
@@ -924,12 +927,12 @@ class HAClient:
         if not hists:
             return
         changed = set()
-        # clés « e:… » : données énergie (pas des courbes)
+        # keys "e:...": energy data (not curves)
         if "e:ss" in hists:
             try:
                 v = await self.fetch_energy()
             except Exception as e:
-                log.warning("Données énergie indisponibles : %s", e)
+                log.warning("Energy data unavailable: %s", e)
                 v = None
             if self.hub.hist.get("e:ss", -1) != v:
                 self.hub.hist["e:ss"] = v
@@ -942,14 +945,14 @@ class HAClient:
         for hours, items in by_hours.items():
             start = now - hours * 3600
             eids = sorted({e for _, e in items})
-            if hours <= 48:     # historique détaillé
+            if hours <= 48:     # detailed history
                 res = await self.send({
                     "type": "history/history_during_period", "start_time": iso(start),
                     "end_time": iso(now), "entity_ids": eids, "minimal_response": True,
                     "no_attributes": True, "significant_changes_only": False}) or {}
                 series = {e: [(p.get("lu") or p.get("lc"), p.get("s")) for p in res.get(e) or []]
                           for e in eids}
-            else:               # statistiques horaires (beaucoup plus léger sur de longues durées)
+            else:               # hourly statistics (much lighter over long periods)
                 res = await self.send({
                     "type": "recorder/statistics_during_period", "start_time": iso(start),
                     "end_time": iso(now), "statistic_ids": eids, "period": "hour",
@@ -961,7 +964,7 @@ class HAClient:
                 if self.hub.hist.get(key) != vals:
                     self.hub.hist[key] = vals
                     changed.add("hist:" + key)
-        # Type 1 : courbes redessinées au plus toutes les 30 min.
+        # Type 1: curves redrawn every 30 min at most.
         new30 = {"hist30:" + k[5:] for k in changed if k[5:] not in self.hist30_seen}
         if time.time() - self.hist30_at >= 1800:
             self.hist30_at = time.time()
@@ -969,12 +972,12 @@ class HAClient:
         else:
             changed |= new30
         self.hist30_seen |= {k for k in hists if k in self.hub.hist}
-        log.debug("Historique : %d graphique(s) mis à jour", len(changed))
+        log.debug("History: %d graph(s) updated", len(changed))
         if changed:
             self.hub.changed(changed)
 
     async def load_registry(self, entities, selected):
-        """Noms d'appareil/pièce et précision d'affichage, lus une fois par connexion."""
+        """Device/room names and display precision, read once per connection."""
         reg = {}
         if not entities:
             return reg
@@ -982,7 +985,7 @@ class HAClient:
             entries = await self.send({"type": "config/entity_registry/get_entries",
                                        "entity_ids": entities})
         except Exception as e:
-            log.warning("Registre des entités illisible : %s", e)
+            log.warning("Entity registry unreadable: %s", e)
             return reg
         need_names = any(True for _ in _iter_names(selected))
         devices, areas = {}, {}
@@ -993,7 +996,7 @@ class HAClient:
                 for a in await self.send({"type": "config/area_registry/list"}):
                     areas[a["area_id"]] = a.get("name")
             except Exception as e:
-                log.warning("Registre des appareils illisible : %s", e)
+                log.warning("Device registry unreadable: %s", e)
         for eid, ent in (entries or {}).items():
             if not ent:
                 continue
@@ -1004,7 +1007,7 @@ class HAClient:
                 dp = sopts.get("suggested_display_precision")
             if dp is not None:
                 info["dp"] = dp
-            # caméra de l'intégration Frigate : unique_id « <entrée>:camera:<nom Frigate> »
+            # camera of the Frigate integration: unique_id "<entry>:camera:<Frigate name>"
             m = re.search(r":camera:([^:]+)$", str(ent.get("unique_id") or ""))
             if ent.get("platform") == "frigate" and m:
                 info["fc"] = m.group(1)
@@ -1025,7 +1028,7 @@ class HAClient:
             if "result" in ev:
                 self.hub.tpl[key] = str(ev["result"])
             elif "error" in ev:
-                self.hub.tpl[key] = "Erreur de template : %s" % ev["error"]
+                self.hub.tpl[key] = "Template error: %s" % ev["error"]
             self.hub.changed({"tpl:" + key})
         return h
 
@@ -1039,7 +1042,7 @@ class HAClient:
         data = (ev or {}).get("data") or {}
         if data.get("url_path") not in {d.spec["url_path"] for d in self.hub.dashes.values()}:
             return
-        log.info("Dashboard « %s » modifié dans Home Assistant : rechargement",
+        log.info("Dashboard '%s' changed in Home Assistant: reloading",
                  data.get("url_path") or "lovelace")
         if self.reload_task and not self.reload_task.done():
             return
@@ -1047,7 +1050,7 @@ class HAClient:
 
     async def _reload_soon(self):
         await asyncio.sleep(2)
-        # Le plus simple et le plus sûr : on recrée la connexion.
+        # The simplest and safest: the connection is recreated.
         if self.ws and not self.ws.closed:
             await self.ws.close()
 
@@ -1082,7 +1085,7 @@ class HAClient:
     async def run_action(self, a, value=None):
         kind = a.get("kind")
         if kind == "light":
-            # curseur luminosité (b) ou température (k) ; value = position 0..1000
+            # brightness (b) or temperature (k) slider; value = position 0..1000
             eid = a["entity"]
             at = (self.hub.states.get(eid) or {}).get("a") or {}
             f = max(0.0, min(1.0, float(value) / 1000.0))
@@ -1098,9 +1101,9 @@ class HAClient:
         if kind == "service":
             return await self.call_service(a["domain"], a["service"], a.get("data"),
                                            a.get("target"))
-        if kind == "set":       # champ modifiable d'une ligne (nombre, liste, heure, texte)
+        if kind == "set":       # editable field of a row (number, list, time, text)
             return await self.set_value(a, "" if value is None else str(value))
-        if kind == "all":       # interrupteur d'en-tête : tout éteindre si l'une est allumée
+        if kind == "all":       # header switch: turn everything off if one is on
             ents = a.get("entities") or []
             on = any((self.hub.states.get(e) or {}).get("s") == "on" for e in ents)
             res = None
@@ -1117,7 +1120,7 @@ class HAClient:
         if kind == "temp":
             cur = (st.get("a") or {}).get("temperature")
             if cur is None:
-                raise RuntimeError("pas de consigne")
+                raise RuntimeError("no set point")
             return await self.call_service("climate", "set_temperature",
                                            {"temperature": float(cur) + float(a["step"])},
                                            {"entity_id": eid})
@@ -1141,7 +1144,7 @@ class HAClient:
 
 
 def _iter_names(obj):
-    """Noms de cartes donnés sous forme d'objet ({type: device}...)."""
+    """Card names given as an object ({type: device}...)."""
     if isinstance(obj, dict):
         for k, v in obj.items():
             if k == "name" and isinstance(v, (dict, list)):
@@ -1187,8 +1190,8 @@ async def guard(req, handler):
     if not client_ok(req, opts):
         if req.remote not in _denied_logged:
             _denied_logged.add(req.remote)
-            log.warning("Accès refusé pour %s (réseau non autorisé ou clé absente)", req.remote)
-        return web.Response(status=403, text="Accès refusé")
+            log.warning("Access denied for %s (network not allowed or key missing)", req.remote)
+        return web.Response(status=403, text="Access denied")
     return await handler(req)
 
 
@@ -1218,18 +1221,18 @@ def pick_view(dash, ref):
 
 def page_shell(hub, dash, title, body, tabs, extra_head="", cls="t1", var=None, view=None):
     o = hub.opts
-    # Version du rendu HTML (et non la version courante) : le navigateur
-    # recevra tout ce qui a changé depuis que le HTML a été produit.
+    # Version of the HTML rendering (not the current version): the browser
+    # will receive everything that changed since the HTML was produced.
     sd = {"v": var.build_version if var else 0, "cv": dash.cv if (dash and var) else "",
           "cl": cls,
           "base": "/%s/" % dash.name if dash else "/",
           "key": o.get("access_key") or "",
           "tmo": LONGPOLL, "iv": dash.spec["refresh"] if dash else 0,
-          "c": 1 if hub.connected else 0}
-    # Pas de bandeau : la pastille de connexion est fixe en haut à droite, devant tout.
+          "c": 1 if hub.connected else 0, "L": i18n.client_data()}
+    # No banner: the connection dot is fixed at the top right, in front of everything.
     tabs = ('<span id="dw"><span id="dot" class="%s"></span></span>'
             % ("ok" if hub.connected else "ha")) + tabs
-    return ("<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"utf-8\">"
+    return ("<!DOCTYPE html><html lang=\"%s\"><head><meta charset=\"utf-8\">"
             "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover\">"
             "<meta name=\"mobile-web-app-capable\" content=\"yes\">"
             "<title>%s</title><link rel=\"stylesheet\" href=\"/static/s.css?%s\">"
@@ -1240,16 +1243,16 @@ def page_shell(hub, dash, title, body, tabs, extra_head="", cls="t1", var=None, 
             "%s<div id=\"main\"%s>%s</div>"
             "<script>var SD=%s;</script><script src=\"/static/s.js?%s\"></script>"
             "</body></html>") % (
-        render.E(title), STATIC_TAG, quote(sd["base"]), quote(title or "SlimDash"),
+        i18n.LANG, render.E(title), STATIC_TAG, quote(sd["base"]), quote(title or "SlimDash"),
         class_css(cls) + hub.theme_style(cls, dash, view), extra_head, cls,
-        # deux colonnes possibles (paysage) seulement si la vue a au moins deux sections,
-        # ou une section sur plusieurs colonnes (column_span)
+        # two columns possible (landscape) only if the view has at least two sections,
+        # or a section spanning several columns (column_span)
         tabs, ' class="cols2"' if ('class="sect c1"' in body or 'class="sect sp' in body) else "",
         body, json.dumps(sd), STATIC_TAG)
 
 
 def class_css(cls):
-    """Feuilles de style en plus de s.css selon la type d'appareil."""
+    """Style sheets in addition to s.css depending on the device type."""
     files = {"t1": [], "t2": ["c-t2.css"],
              "t3": ["c-t2.css", "c-t3.css"]}.get(cls, [])
     return "".join('<link rel="stylesheet" href="/static/%s?%s">' % (f, STATIC_TAG) for f in files)
@@ -1260,7 +1263,7 @@ def default_ref(d):
 
 
 def dash_title(d):
-    """Titre d'un dashboard publié : titre de sa 1re vue."""
+    """Title of a published dashboard: title of its 1st view."""
     v, _ = pick_view(d, default_ref(d))
     return str(v["title"]) if v else d.name
 
@@ -1276,34 +1279,34 @@ async def h_index(req):
         '<a class="card dl" href="/%s%s"><b>%s</b><br><span class="sub">%s</span></a>' % (
             render.E(d.name), render.E(k), render.E(dash_title(d)),
             render.E(d.spec["label"]))
-        for d in dashes) or '<div class="card">Aucun dashboard configuré.</div>'
+        for d in dashes) or '<div class="card">No dashboard configured.</div>'
     html_ = page_shell(hub, None, "SlimDash", items, "", cls=device_type(None, req))
     return web.Response(text=html_, content_type="text/html",
                         headers={"Cache-Control": "no-store", "Vary": "User-Agent"})
 
 
 async def h_diag(req):
-    """Ce que l'appareil annonce, et le type que SlimDash en déduit."""
+    """What the device reports, and the type SlimDash deduces from it."""
     hub = req.app["hub"]
     ua = req.headers.get("User-Agent", "")
     eng, ver, cls = classify(ua)
-    rows = [("Navigateur annoncé (User-Agent)", ua or "—"),
-            ("Moteur détecté", "%s %s" % (eng, ver or "")),
-            ("Type automatique", TYPE_LABEL[cls]),
-            ("Adresse IP", req.remote or "—")]
+    rows = [("Reported browser (User-Agent)", ua or "—"),
+            ("Detected engine", "%s %s" % (eng, ver or "")),
+            ("Automatic type", TYPE_LABEL[cls]),
+            ("IP address", req.remote or "—")]
     for d in hub.dashes.values():
         forced = d.spec["device"]
         eff = forced if forced in TYPE_IDS else cls
         rows.append(("Dashboard /%s" % d.name, "%s (%s)" % (
-            TYPE_LABEL[eff], "forcé" if forced in TYPE_IDS else "auto")))
-    body = '<div class="card"><h2>Diagnostic de cet appareil</h2>' + "".join(
+            TYPE_LABEL[eff], "forced" if forced in TYPE_IDS else "auto")))
+    body = '<div class="card"><h2>Diagnostics for this device</h2>' + "".join(
         '<div class="row"><span class="nm">%s</span><span class="rt diag">%s</span></div>'
         % (render.E(k), render.E(v)) for k, v in rows) + (
-        '<div class="row"><span class="nm">Écran</span><span class="rt diag">'
-        '<script>document.write(screen.width+" x "+screen.height+" (fenêtre "'
-        '+window.innerWidth+" x "+window.innerHeight+", densité "'
+        '<div class="row"><span class="nm">Screen</span><span class="rt diag">'
+        '<script>document.write(screen.width+" x "+screen.height+" (window "'
+        '+window.innerWidth+" x "+window.innerHeight+", density "'
         '+(window.devicePixelRatio||1)+")");</script></span></div></div>')
-    html_ = page_shell(hub, None, "SlimDash – diagnostic", body, "", cls=cls)
+    html_ = page_shell(hub, None, "SlimDash - diagnostics", body, "", cls=cls)
     return web.Response(text=html_, content_type="text/html",
                         headers={"Cache-Control": "no-store", "Vary": "User-Agent"})
 
@@ -1315,7 +1318,7 @@ async def h_page(req):
     view, idx = pick_view(dash, ref)
     resp_headers = {"Cache-Control": "no-store"}
     if view is None:
-        msg = dash.error or "Connexion à Home Assistant…"
+        msg = dash.error or "Connecting to Home Assistant…"
         html_ = page_shell(hub, dash, "SlimDash",
                            '<div class="card"><p>%s</p></div>' % render.E(msg),
                            "", '<meta http-equiv="refresh" content="5">')
@@ -1325,7 +1328,7 @@ async def h_page(req):
     page = var.pages.get(idx)
     if page is None:
         tabs = ""
-        # Pas d'onglets s'il n'y a qu'une seule vue (la pastille de connexion est à part).
+        # No tabs if there is only one view (the connection dot is separate).
         if len(dash.tab_indices) > 1:
             byidx = {v["index"]: v for v in dash.views}
             tabs = '<div id="tabs" class="%s">' % ("bot" if dash.spec["tabs_bottom"] else "top")
@@ -1348,7 +1351,7 @@ async def h_page(req):
         page = page_shell(hub, dash, title, body, tabs, cls=cls, var=var, view=view).encode("utf-8")
         var.pages[idx] = page
     t = req.query.get("type")
-    if t in TYPES:      # type forcé : gardé en changeant d'onglet (pas dans la page en cache)
+    if t in TYPES:      # forced type: kept when changing tab (not in the cached page)
         page = page.replace(('href="/%s?view=' % render.E(dash.name)).encode("utf-8"),
                             ('href="/%s?type=%s&amp;view=' % (render.E(dash.name), t)).encode("utf-8"))
     resp_headers["Vary"] = "User-Agent"
@@ -1373,7 +1376,7 @@ async def h_updates(req):
     if q.get("cv") != dash.cv or var is None:
         return web.json_response({"r": 1}, headers=nocache)
     ch = var.changes_since(v)
-    # w=0 : rafraîchissement périodique, réponse immédiate (pas d'attente).
+    # w=0: periodic refresh, immediate response (no waiting).
     if not ch and q.get("w") != "0" and q.get("c") == ("1" if hub.connected else "0"):
         fut = asyncio.get_running_loop().create_future()
         var.waiters.add(fut)
@@ -1402,25 +1405,25 @@ async def h_action(req):
         a = var.actions[idx]
     except (ValueError, IndexError):
         return web.json_response({"ok": 0, "e": "action inconnue"}, status=400)
-    # Même action du même appareil en moins d'1 s : doublon (toucher + clic fantôme).
+    # Same action from the same device in less than 1 s: duplicate (touch + ghost click).
     last = _last_actions
     sig = (req.remote, dash.name, var.cls, idx, form.get("v"))
     now = time.time()
     if now - last.get(sig, 0) < 1.0:
-        log.info("Action en double ignorée (%s)", req.remote)
+        log.info("Duplicate action ignored (%s)", req.remote)
         return web.json_response({"ok": 1})
     last[sig] = now
     try:
         await ha.run_action(a, form.get("v"))
     except Exception as e:
-        log.warning("Échec de l'action %s : %s", a, e)
+        log.warning("Action %s failed: %s", a, e)
         return web.json_response({"ok": 0, "e": str(e)}, status=502)
     return web.json_response({"ok": 1})
 
 
 async def h_live(req):
-    """Vidéo en direct d'une caméra Frigate : relais du websocket MSE de go2rtc
-    (Frigate /live/mse/api/ws). Le navigateur ne parle qu'à SlimDash."""
+    """Live video of a Frigate camera: relay of the go2rtc MSE websocket
+    (Frigate /live/mse/api/ws). The browser only talks to SlimDash."""
     hub = req.app["hub"]
     dash = get_dash(req)
     eid = req.query.get("e", "")
@@ -1476,8 +1479,8 @@ async def h_debug(req):
 
 
 async def h_cam(req):
-    """Image d'une caméra du dashboard en 360 px de haut, via Frigate ou à défaut HA,
-    partagée entre les appareils : gardée 0,15 s (Frigate) ou 0,8 s (HA)."""
+    """Image of a dashboard camera 360 px high, through Frigate or otherwise HA,
+    shared between devices: kept 0.15 s (Frigate) or 0.8 s (HA)."""
     hub = req.app["hub"]
     dash = get_dash(req)
     eid = req.query.get("e", "")
@@ -1488,7 +1491,7 @@ async def h_cam(req):
     fc = (hub.reg.get(eid) or {}).get("fc") if hub.frigate else None
     if fc:
         url, hdr, ttl = "%s/api/%s/latest.jpg?h=360" % (hub.frigate, quote(fc)), {}, 0.15
-    else:       # HA réduit seulement si largeur ET hauteur sont données (640x360 en 16:9)
+    else:       # HA only shrinks if width AND height are given (640x360 in 16:9)
         url = "%s/camera_proxy/%s?width=640&height=360" % (hub.opts["api_url"], eid)
         hdr, ttl = {"Authorization": "Bearer " + hub.opts["token"]}, 0.8
     lock = req.app["camlocks"].setdefault(key, asyncio.Lock())
@@ -1498,12 +1501,12 @@ async def h_cam(req):
             try:
                 async with req.app["http"].get(url, headers=hdr, timeout=10) as r:
                     if r.status != 200:
-                        raise web.HTTPBadGateway(text="caméra indisponible (%d)" % r.status)
+                        raise web.HTTPBadGateway(text="camera unavailable (%d)" % r.status)
                     ent = (time.time(), await r.read(), r.headers.get("Content-Type", "image/jpeg"))
             except web.HTTPException:
                 raise
             except Exception as e:
-                raise web.HTTPBadGateway(text="caméra indisponible : %s" % e)
+                raise web.HTTPBadGateway(text="camera unavailable: %s" % e)
             cache[key] = ent
             for k in [k for k, v in cache.items() if time.time() - v[0] > 120]:
                 cache.pop(k, None)
@@ -1511,8 +1514,8 @@ async def h_cam(req):
 
 
 async def h_img(req):
-    """Image d'une carte picture, relayée depuis HA (avec le jeton : /local, image envoyée,
-    image d'entité) ou depuis son adresse http(s). Gardée 10 min, partagée entre appareils."""
+    """Image of a picture card, relayed from HA (with the token: /local, uploaded image,
+    entity image) or from its http(s) address. Kept 10 min, shared between devices."""
     hub = req.app["hub"]
     dash = get_dash(req)
     spec = dash.img(req.query.get("i", ""))
@@ -1536,10 +1539,10 @@ async def h_img(req):
             try:
                 async with req.app["http"].get(url, headers=hdr, timeout=20) as r:
                     if r.status != 200:
-                        raise web.HTTPBadGateway(text="image indisponible (%d)" % r.status)
+                        raise web.HTTPBadGateway(text="image unavailable (%d)" % r.status)
                     ctype = r.headers.get("Content-Type", "image/jpeg")
                     if not ctype.startswith("image/"):
-                        raise web.HTTPBadGateway(text="pas une image")
+                        raise web.HTTPBadGateway(text="not an image")
                     body = await r.read()
                     if len(body) > 15 * 1024 * 1024:
                         raise web.HTTPBadGateway(text="image trop lourde")
@@ -1547,12 +1550,12 @@ async def h_img(req):
             except web.HTTPException:
                 raise
             except Exception as e:
-                raise web.HTTPBadGateway(text="image indisponible : %s" % e)
+                raise web.HTTPBadGateway(text="image unavailable: %s" % e)
             cache[url] = ent
             for k in [k for k, v in cache.items() if time.time() - v[0] > 3600]:
                 cache.pop(k, None)
-        # Image de fond d'une vue : réduite à la taille de l'écran demandée (w), une fois
-        # par image, puis gardée.
+        # Background image of a view: shrunk to the requested screen size (w), once
+        # per image, then kept.
         w = req.query.get("w", "")
         if w.isdigit() and int(w) in theme.BG_SIZES:
             small = cache.get(url + "#" + w)
@@ -1567,8 +1570,8 @@ async def h_img(req):
 
 
 def shrink_image(body, ctype, side):
-    """Réduit l'image pour que son plus grand côté fasse « side » pixels au plus (jamais
-    agrandie). Sans Pillow, ou image illisible : l'image d'origine."""
+    """Shrinks the image so that its longest side is at most "side" pixels (never
+    enlarged). Without Pillow, or unreadable image: the original image."""
     try:
         from PIL import Image, ImageOps
         im = Image.open(io.BytesIO(body))
@@ -1583,7 +1586,7 @@ def shrink_image(body, ctype, side):
         im.convert("RGB").save(buf, "JPEG", quality=72, optimize=True, progressive=True)
         return buf.getvalue(), "image/jpeg"
     except Exception:
-        log.exception("réduction d'image impossible")
+        log.exception("image shrinking impossible")
         return body, ctype
 
 
@@ -1612,7 +1615,7 @@ _icon192 = None
 
 
 async def h_icon192(req):
-    """icon.png agrandie à 192 px : taille minimale pour installer la page comme appli."""
+    """icon.png enlarged to 192 px: minimum size to install the page as an app."""
     global _icon192
     if _icon192 is None:
         import io
@@ -1626,7 +1629,7 @@ async def h_icon192(req):
 
 
 async def h_manifest(req):
-    """Manifest PWA : plein écran quand la page est installée sur l'écran d'accueil."""
+    """PWA manifest: full screen when the page is installed on the home screen."""
     start = req.query.get("s") or "/"
     if not start.startswith("/") or start.startswith("//"):
         start = "/"
@@ -1662,7 +1665,7 @@ def main():
     for d in opts["_dashes"]:
         log.info("  /%s  <-  %s", d["name"], d["label"])
     if not opts["token"]:
-        log.error("Aucun jeton : lancez SlimDash comme add-on, ou définissez HA_TOKEN.")
+        log.error("No token: run SlimDash as an add-on, or set HA_TOKEN.")
     hub = Hub(opts)
     app = web.Application(middlewares=[guard])
     app["hub"] = hub

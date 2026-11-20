@@ -21,5 +21,5 @@ div.card.cam 50,514 500x500 f18/400 rgb(255,255,255) bgrgb(0,0,0) r8px
 img.ci 51,515 498x498 f18/400 rgb(255,255,255) bgrgba(0,0,0,0) r0px
 div.cf 51,965 498x48 f18/400 rgb(255,255,255) bgrgba(0,0,0,0.3) r0px
 span.ct 67,965 53x48 f16/500 rgb(255,255,255) bgrgba(0,0,0,0) r0px
-span.co 492,965 45x48 f16/400 rgb(255,255,255) bgrgba(0,0,0,0) r0px
-span 492,979 45x19 f16/400 rgb(255,255,255) bgrgba(0,0,0,0) r0px
+span.co 511,965 26x48 f16/400 rgb(255,255,255) bgrgba(0,0,0,0) r0px
+span 511,979 26x19 f16/400 rgb(255,255,255) bgrgba(0,0,0,0) r0px

@@ -8,6 +8,26 @@ dashboards as an ultra-light HTML page that even very old browsers can display s
 
 ![Supports aarch64][aarch64-shield] ![Supports amd64][amd64-shield]
 
+## Warning
+
+**Use these old devices at your own risk!** An old device comes with a few risks:
+
+- **Battery overheating**: a worn-out battery left on charge all day can heat up and swell.
+- **Network security**: an old system no longer gets security updates and relies on outdated
+  certificates. Its known flaws come with it onto your local network.
+- **Plain HTTP pages**: the access key travels unencrypted on your network. Keep
+  `allowed_networks` limited to your devices and never open port 8099 to the Internet.
+- **Sensitive controls**: anyone standing in front of the device can use what the dashboard
+  shows. Avoid locks, alarm or garage door on a screen left in free access.
+
+I strongly recommend managing the device's charging, isolating the device on your network and
+blocking its access to the Internet. A few more good habits:
+
+- Check the device now and then for a swelling battery. If the battery can be removed, you can
+  power the device directly; a smart plug driven by Home Assistant can keep the charge between
+  20 % and 80 %.
+- Keep the device dedicated: no personal accounts (Google, mail) and no apps you do not need.
+
 ## Why
 
 We all have an old phone or tablet sitting in a drawer, outdated or worn out. It has become too
@@ -62,26 +82,6 @@ updated live, that keeps the layout of your original dashboard.
 ## Tip
 
 **Before installing SlimDash, debloat your devices to make them fast and smooth!**
-
-## Warning
-
-**Use these old devices at your own risk!** An old device comes with a few risks:
-
-- **Battery overheating**: a worn-out battery left on charge all day can heat up and swell.
-- **Network security**: an old system no longer gets security updates and relies on outdated
-  certificates. Its known flaws come with it onto your local network.
-- **Plain HTTP pages**: the access key travels unencrypted on your network. Keep
-  `allowed_networks` limited to your devices and never open port 8099 to the Internet.
-- **Sensitive controls**: anyone standing in front of the device can use what the dashboard
-  shows. Avoid locks, alarm or garage door on a screen left in free access.
-
-I strongly recommend managing the device's charging, isolating the device on your network and
-blocking its access to the Internet. A few more good habits:
-
-- Check the device now and then for a swelling battery. If the battery can be removed, you can
-  power the device directly; a smart plug driven by Home Assistant can keep the charge between
-  20 % and 80 %.
-- Keep the device dedicated: no personal accounts (Google, mail) and no apps you do not need.
 
 See the **Documentation** tab for setup and options.
 

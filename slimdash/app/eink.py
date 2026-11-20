@@ -1,10 +1,10 @@
-"""Type 0 : la vue dessinée en image PNG (niveaux de gris), pour les liseuses dont le
-navigateur n'est pas utilisable (Kindle 4…). Adresse : /<dashboard>.png?view=N
+"""Type 0: the view drawn as a PNG image (greyscale), for e-readers whose
+browser cannot be used (Kindle 4...). Address: /<dashboard>.png?view=N
 
-Dessin direct avec Pillow, sans navigateur : même grille que les vues « sections » de HA
-(12 colonnes, rangées de 56 px + 8 px), un dessinateur par type de carte ; toute carte
-non prévue s'affiche en liste « nom : état ». Pensé pour l'encre électronique : fond blanc,
-noir franc, 16 niveaux de gris au plus.
+Drawn directly with Pillow, without a browser: same grid as the HA "sections" views
+(12 columns, rows of 56 px + 8 px), one drawer per card type; any card not
+handled is shown as a "name: state" list. Designed for e-ink: white background,
+solid black, 16 grey levels at most.
 """
 import asyncio
 import hashlib
@@ -18,46 +18,41 @@ from datetime import datetime
 
 from aiohttp import web
 
+import i18n
 import icons
 import render
 
 try:
     from PIL import Image, ImageDraw, ImageFont
-except ImportError:         # PC de développement sans Pillow : réponse 503
+except ImportError:         # development PC without Pillow: 503 response
     Image = None
 
 log = logging.getLogger("slimdash.eink")
 HERE = os.path.dirname(os.path.abspath(__file__))
 FONT_FILE = os.path.join(HERE, "fonts", "Roboto.ttf")
 
-SS = 2                  # suréchantillonnage (dessin ×2 puis réduction : bords lissés)
-ROW, GAP = 56, 8        # rangée de la grille HA et espacement
-PAD = 8                 # marge de la page (haut, bas)
-SIDE = 0.09             # marge gauche et droite, en part de la largeur (54 px sur 600)
-INK, INK2, GREY, LINE = 0, 0x33, 0x99, 0x66   # noir, texte secondaire, gris moyen, traits
-# Aspect du type 3 (HA) : page gris clair, cartes blanches, surfaces gris clair.
-# Valeurs avant la correction finale pour l'encre (≈ 221, 204, 204 à l'écran).
+SS = 2                  # supersampling (drawn at x2 then reduced: smooth edges)
+ROW, GAP = 56, 8        # HA grid row and gap
+PAD = 8                 # page margin (top, bottom)
+SIDE = 0.09             # left and right margin, as a share of the width (54 px out of 600)
+INK, INK2, GREY, LINE = 0, 0x33, 0x99, 0x66   # black, secondary text, medium grey, lines
+# Type 3 look (HA): light grey page, white cards, light grey surfaces.
+# Values before the final e-ink correction (about 221, 204, 204 on screen).
 BG, CARD, FILL, ARC0 = 232, 255, 222, 215
 
-JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
-JOURS3 = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]
-MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
-        "septembre", "octobre", "novembre", "décembre"]
-MOIS3 = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.",
-         "nov.", "déc."]
 _DATE = re.compile(r"'([^']*)'|cccc|EEEE|ccc|EEE|LLLL|MMMM|LLL|MMM|LL|MM|dd|d|yyyy|yy|HH|H|hh|h|mm|ss|a")
 
 
 def fmt_date(f, d):
-    """Mêmes jetons que l'horloge de s.js (carte digital-clock)."""
+    """Same tokens as the s.js clock (digital-clock card)."""
     def rep(m):
         t = m.group(0)
         h12 = d.hour % 12 or 12
         return {
-            "cccc": JOURS[d.weekday()], "EEEE": JOURS[d.weekday()],
-            "ccc": JOURS3[d.weekday()], "EEE": JOURS3[d.weekday()],
-            "LLLL": MOIS[d.month - 1], "MMMM": MOIS[d.month - 1],
-            "LLL": MOIS3[d.month - 1], "MMM": MOIS3[d.month - 1],
+            "cccc": i18n.day_name(d.weekday()), "EEEE": i18n.day_name(d.weekday()),
+            "ccc": i18n.day_name(d.weekday(), True), "EEE": i18n.day_name(d.weekday(), True),
+            "LLLL": i18n.month_name(d), "MMMM": i18n.month_name(d),
+            "LLL": i18n.month_name(d, True), "MMM": i18n.month_name(d, True),
             "LL": "%02d" % d.month, "MM": "%02d" % d.month, "dd": "%02d" % d.day, "d": str(d.day),
             "yyyy": str(d.year), "yy": str(d.year)[2:], "HH": "%02d" % d.hour, "H": str(d.hour),
             "hh": "%02d" % h12, "h": str(h12), "mm": "%02d" % d.minute, "ss": "%02d" % d.second,
@@ -67,7 +62,7 @@ def fmt_date(f, d):
 
 
 # --------------------------------------------------------------------------
-# Icônes : tracés SVG (MDI et icônes maison) dessinés directement
+# Icons: SVG paths (MDI and house icons) drawn directly
 # --------------------------------------------------------------------------
 _NUM = re.compile(r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
 
@@ -155,12 +150,12 @@ def _arc(x1, y1, rx, ry, phi, fa, fs, x2, y2):
 
 
 def path_polys(d):
-    """Tracé SVG -> liste de polylignes [(x, y)…] (courbes aplaties)."""
+    """SVG path -> list of polylines [(x, y)...] (flattened curves)."""
     sc = _Scan(d)
     subs, pts = [], None
     x = y = sx = sy = 0.0
     cmd = prev = None
-    lc = None           # dernier point de contrôle (S / T)
+    lc = None           # last control point (S / T)
     while True:
         c = sc.cmd()
         if c is None:
@@ -241,7 +236,7 @@ def path_polys(d):
 
 
 def _fill(polys, size, scale):
-    """Remplissage « nonzero » (règle SVG par défaut) -> masque L de size × size."""
+    """"nonzero" fill (default SVG rule) -> L mask of size x size."""
     edges = []
     for p in polys:
         for (x0, y0), (x1, y1) in zip(p, p[1:] + p[:1]):
@@ -275,13 +270,13 @@ _icon_cache = {}
 
 
 def icon_mask(key, px):
-    """Masque L (px × px) d'une icône : clé « m-xxx » (MDI, plein) ou icône maison (trait)."""
+    """L mask (px x px) of an icon: key "m-xxx" (MDI, filled) or house icon (stroke)."""
     px = max(4, int(round(px)))
     ck = (key, px)
     m = _icon_cache.get(ck)
     if m is not None:
         return m
-    q = 4                       # suréchantillonnage propre aux icônes
+    q = 4                       # supersampling specific to the icons
     size = px * q
     scale = size / 24.0
     try:
@@ -311,7 +306,7 @@ def icon_mask(key, px):
                     if rr > r:
                         dr.ellipse((cx - rr + r, cy - rr + r, cx + rr - r, cy + rr - r), fill=0)
     except Exception:
-        log.exception("Icône %s illisible", key)
+        log.exception("Icon %s unreadable", key)
         m = Image.new("L", (size, size), 0)
     m = m.resize((px, px), Image.LANCZOS)
     if len(_icon_cache) > 600:
@@ -321,7 +316,7 @@ def icon_mask(key, px):
 
 
 # --------------------------------------------------------------------------
-# Crayon : coordonnées en px de page (1×), dessin suréchantillonné
+# Pen: coordinates in page px (1x), supersampled drawing
 # --------------------------------------------------------------------------
 _fonts = {}
 
@@ -350,7 +345,7 @@ class Pen:
 
     @staticmethod
     def clean(s):
-        """Une seule ligne ; espace fine insécable (milliers) absente de Roboto -> insécable."""
+        """A single line; thin no-break space (thousands) missing from Roboto -> no-break space."""
         return " ".join(str(s).split("\n")).replace(" ", " ")
 
     @staticmethod
@@ -407,7 +402,7 @@ class Pen:
 
 
 # --------------------------------------------------------------------------
-# Dessin d'une vue
+# Drawing a view
 # --------------------------------------------------------------------------
 class Scene:
     def __init__(self, dash, now):
@@ -418,12 +413,12 @@ class Scene:
         self.pen = None         # None : mesure seulement
         self.in_sic = 0
 
-    # ---- données ----
+    # ---- data ----
     def st(self, eid):
         return self.hub.states.get(eid) if eid else None
 
     def state(self, eid, decimals=None):
-        if render.domain_of(eid) in render.STATELESS:    # bouton, scène, script : pas d'état utile
+        if render.domain_of(eid) in render.STATELESS:    # button, scene, script: no useful state
             return ""
         return render.fmt_state(self.st(eid), eid, self.b.prec(eid) if decimals is None else decimals)
 
@@ -448,7 +443,7 @@ class Scene:
         hours = max(1, min(render.MAX_HOURS, int(hours or 24)))
         return self.hub.hist.get("h:%s:%d" % (eid, hours)) or []
 
-    # ---- types de carte ----
+    # ---- card types ----
     @staticmethod
     def kind(c):
         return re.sub(r"[^a-z0-9]", "_", str(c.get("type", "")).lower())
@@ -491,7 +486,7 @@ class Scene:
         return True
 
     def size(self, c):
-        """(colonnes sur 12, rangées ou None = hauteur naturelle), comme render.py."""
+        """(columns out of 12, rows or None = natural height), like render.py."""
         k = self.kind(c)
         if k == "conditional":
             return self.size(c.get("card") or {})
@@ -523,7 +518,7 @@ class Scene:
         return self.run(c, 0, 0, w, None)
 
     def run(self, c, x, y, w, h):
-        """h None : renvoie la hauteur naturelle sans dessiner. Sinon dessine dans (x, y, w, h)."""
+        """h None: returns the natural height without drawing. Otherwise draws in (x, y, w, h)."""
         k = self.kind(c)
         fn = getattr(self, "k_" + k, None)
         if k == "conditional":
@@ -534,7 +529,7 @@ class Scene:
         try:
             return (fn or self.k_fallback)(c, x, y, w, h)
         except Exception:
-            log.exception("Type 0 : erreur de dessin de la carte %s", k)
+            log.exception("Type 0: drawing error for card %s", k)
             return 0 if h is None else h
         finally:
             self.pen = pen
@@ -559,9 +554,9 @@ class Scene:
 
     # ---- grille de section ----
     def grid(self, cards, x, y, w, draw=True):
-        """Placement « dense » sur 12 colonnes (comme HA). Renvoie la hauteur occupée."""
+        """"Dense" placement on 12 columns (like HA). Returns the height used."""
         cw = (w - 11 * GAP) / 12.0
-        occ = []                # rangées -> set de colonnes prises
+        occ = []                # rows -> set of columns taken
         placed = []
         for c in cards:
             if not self.visible(c):
@@ -597,9 +592,9 @@ class Scene:
         return nrows * ROW + max(0, nrows - 1) * GAP
 
     def view(self, v, W, draw=True, y0=0.0):
-        """Hauteur totale de la vue à la largeur W (et dessin si draw), décalée de y0."""
+        """Total height of the view at width W (and drawing if draw), shifted by y0."""
         y = PAD + y0
-        side = max(PAD, round(W * SIDE))     # marges gauche/droite plus larges : moins étiré
+        side = max(PAD, round(W * SIDE))     # wider left/right margins: less stretched
         x, w = side, W - 2 * side
         badges = v.get("badges") or []
         if badges:
@@ -752,7 +747,7 @@ class Scene:
                 second = "%s %s / %s %s" % (render.num(items[0].get("temperature")), unit,
                                             render.num(items[0].get("templow")), unit)
             elif a.get("humidity") is not None:
-                second = "%s %% d'humidité" % render.num(a["humidity"])
+                second = "%s %% humidity" % render.num(a["humidity"])
             rw = max(self.tw(temp, 34, 400), self.tw(second, 15, 400)) + 12
             self.T(x + w - 12, cy + 2, temp, 34, 400, anchor="ra")
             self.T(x + w - 12, cy + 42, second, 15, 400, fill=INK2, anchor="ra")
@@ -764,7 +759,7 @@ class Scene:
             n = len(items)
             room = y + h - cy - 8
             cw = (w - 16) / float(max(1, n))
-            # Prévisions plus grandes et centrées dans la place restante (pas de vide en bas).
+            # Larger forecasts, centred in the remaining space (no gap at the bottom).
             isz = max(20, min(60, room - 72, cw - 8))
             blk = 70 + isz
             fy = cy + max(0, (room - blk) / 2.0)
@@ -772,7 +767,7 @@ class Scene:
                 cx = x + 8 + cw * i + cw / 2.0
                 try:
                     d = datetime.fromisoformat(str(f.get("datetime")).replace("Z", "+00:00")).astimezone()
-                    lab = JOURS3[d.weekday()] if ftype != "hourly" else d.strftime("%H:%M")
+                    lab = i18n.day_name(d.weekday(), True) if ftype != "hourly" else d.strftime("%H:%M")
                 except (ValueError, TypeError):
                     lab = ""
                 self.T(cx, fy, lab, 16, 500, anchor="ma")
@@ -787,11 +782,11 @@ class Scene:
     k_custom_meteofrance_weather_card = k_weather_forecast
 
     def chart(self, series, x, y, w, h, frame_bottom=True):
-        """series = [(valeurs, épaisseur, gris)] -> courbes dans le rectangle."""
+        """series = [(values, thickness, grey)] -> curves in the rectangle."""
         if not self.pen or h < 8:
             return
         if not any(v is not None for vals, _, _ in series for v in vals):
-            self.T(x + w / 2.0, y + h / 2.0, "pas de données", 13, 400, fill=GREY, anchor="mm")
+            self.T(x + w / 2.0, y + h / 2.0, "no data", 13, 400, fill=GREY, anchor="mm")
             return
         lines = []
         for vals, width, grey in series:
@@ -799,7 +794,7 @@ class Scene:
             known = [v for v in vals if v is not None]
             if n < 2 or not known:
                 continue
-            # Échelle propre à chaque courbe (unités différentes), comme les mini-graphiques.
+            # Scale specific to each curve (different units), like the mini graphs.
             lo, hi = min(known), max(known)
             if hi - lo < 1e-9:
                 lo, hi = lo - 1, hi + 1
@@ -813,7 +808,7 @@ class Scene:
                     seg = []
                     continue
                 seg.append((x + w * i / float(n - 1), y + h - (v - lo) / (hi - lo) * h))
-        # Comme le type 3 : surface grisée sous les courbes, puis les traits par-dessus.
+        # Like type 3: greyed area under the curves, then the lines on top.
         for seg, _, _ in lines:
             self.pen.d.polygon([(u * SS, v * SS) for u, v in seg + [(seg[-1][0], y + h), (seg[0][0], y + h)]],
                                fill=FILL)
@@ -823,7 +818,7 @@ class Scene:
             self.pen.line([(x, y + h), (x + w, y + h)], GREY, 1)
 
     def order_ents(self, ents):
-        """Plusieurs valeurs : température d'abord, puis humidité, puis pression, puis le reste."""
+        """Several values: temperature first, then humidity, then pressure, then the rest."""
         def rank(e):
             a = (self.st(e["entity"]) or {}).get("a") or {}
             dc, u = a.get("device_class"), a.get("unit_of_measurement") or ""
@@ -834,10 +829,10 @@ class Scene:
             if dc in ("pressure", "atmospheric_pressure") or u in ("hPa", "mbar", "inHg", "mmHg"):
                 return 2
             return 3
-        return sorted(ents, key=rank)      # tri stable : l'ordre de la carte est gardé sinon
+        return sorted(ents, key=rank)      # stable sort: otherwise the order of the card is kept
 
     def big_value(self, x, y, e, size, maxw, anchor="la"):
-        """Valeur en gros avec l'unité plus petite à côté (comme la carte). Renvoie la largeur."""
+        """Large value with the smaller unit beside it (like the card). Returns the width."""
         eid = e["entity"]
         txt = self.state(eid, e.get("decimals"))
         unit = ((self.st(eid) or {}).get("a") or {}).get("unit_of_measurement")
@@ -872,7 +867,7 @@ class Scene:
         shown = [e for e in ents if e.get("show_state") is not False]
         size = ssize(shown[0]) if shown else 0
         rest = shown[1:]
-        rs = 22                                   # valeurs suivantes, empilées à droite
+        rs = 22                                   # following values, stacked on the right
         head = (30 if title else 0)
         vals_h = (max(size, (rs + 4) * len(rest)) + 8) if shown else 0
         if h is None:
@@ -885,7 +880,7 @@ class Scene:
         if shown:
             rw = 0
             ry = cy
-            for e in rest:      # humidité, pression… à droite, l'une sous l'autre
+            for e in rest:      # humidity, pressure... on the right, one under the other
                 rw = max(rw, self.big_value(x + w - 14, ry, e, rs, (w - 28) * 0.45, anchor="ra"))
                 ry += rs + 4
             self.big_value(x + 14, cy, shown[0], size, w - 28 - (rw + 10 if rest else 0))
@@ -938,7 +933,7 @@ class Scene:
         if self.pen:
             self.pen.arc(cx, cy, r - th / 2, 180, 360, th, ARC0)
             self.pen.arc(cx, cy, r - th / 2, 180, 180 + 180 * max(0.0, min(1.0, frac)), th, INK)
-        # Valeur logée dans le creux de l'arc, sans le toucher (1200 W, Indisponible…).
+        # Value placed in the hollow of the arc, without touching it (1200 W, Unavailable...).
         fs = max(12, min(24, (r - th) * 0.55))
         room = 1.5 * (r - th)
         while fs > 12 and self.tw(txt, fs, 500) > room:
@@ -1048,7 +1043,7 @@ class Scene:
             if not (isinstance(s, dict) and s.get("entity")):
                 continue
             se = s["entity"]
-            # Comme render.py : state_content (« state », « last_updated », attribut…) ou show_state.
+            # Like render.py: state_content ("state", "last_updated", attribute...) or show_state.
             sc = s.get("state_content")
             sc = [sc] if isinstance(sc, str) else [k for k in (sc or []) if isinstance(k, str)]
             if s.get("show_state") and "state" not in sc:
@@ -1060,7 +1055,7 @@ class Scene:
                     vals.append(render.cap(self.state(se)))
                 elif k in ("last_updated", "last_changed", "last-updated", "last-changed"):
                     t = render.ts_epoch((self.st(se) or {}).get("lc"))
-                    vals.append(render.cap(render.rel_fr(t)) if t is not None else "—")
+                    vals.append(render.cap(render.rel_time(t)) if t is not None else "—")
                 elif re.match(r"^\w+$", k):
                     v = ((self.st(se) or {}).get("a") or {}).get(k)
                     vals.append("—" if v is None else str(v))
@@ -1245,7 +1240,7 @@ class Scene:
         return h
 
     def k_fallback(self, c, x, y, w, h):
-        """Carte non prévue : liste « nom : état » des entités qu'elle cite."""
+        """Card not handled: "name: state" list of the entities it cites."""
         title = (c.get("title") or c.get("name") or c.get("card_header") or c.get("header") or "")
         if not isinstance(title, str) or "[[[" in title or render.has_tpl(title):
             title = ""
@@ -1282,7 +1277,7 @@ class Scene:
 
 
 def draw_png(dash, view_idx, W=600, H=800, rotate=0):
-    """Image PNG (octets) de la vue. Contenu trop haut : tout est réduit pour tenir."""
+    """PNG image (bytes) of the view. Content too tall: everything is shrunk to fit."""
     views = (dash.config or {}).get("views") or []
     v = views[view_idx] if 0 <= view_idx < len(views) else {}
     sc = Scene(dash, datetime.now())
@@ -1297,7 +1292,7 @@ def draw_png(dash, view_idx, W=600, H=800, rotate=0):
         if s <= 0.6:
             break
     sc.pen = Pen(vw, vh)
-    # Contenu plus court que l'écran : centré de haut en bas (même marge en haut et en bas).
+    # Content shorter than the screen: centred top to bottom (same margin at top and bottom).
     need = sc.view(v, vw, draw=False)
     used = need - PAD - (2 * GAP if v.get("type") == "sections" else GAP)
     off = max(0.0, (vh - used) / 2.0 - PAD)
@@ -1306,7 +1301,7 @@ def draw_png(dash, view_idx, W=600, H=800, rotate=0):
         sc.pen.d.rectangle((0, (vh - 30) * SS, vw * SS, vh * SS), fill=INK)
         sc.pen.text(vw / 2.0, vh - 15, "Home Assistant injoignable", 16, 500, fill=255, anchor="mm")
     img = sc.pen.img.resize((W, H), Image.LANCZOS)
-    # Encre électronique : gris foncés un peu plus foncés (texte plus net), puis 16 niveaux.
+    # E-ink: dark greys a little darker (sharper text), then 16 levels.
     lut = [min(255, int(round(((i / 255.0) ** 1.35) * 15)) * 17) for i in range(256)]
     img = img.point(lut)
     if rotate in (90, 180, 270):
@@ -1319,18 +1314,18 @@ def draw_png(dash, view_idx, W=600, H=800, rotate=0):
 # --------------------------------------------------------------------------
 # Serveur
 # --------------------------------------------------------------------------
-_cache = {}         # (dash, vue, taille, rotation) -> (clé de contenu, png, etag)
+_cache = {}         # (dash, view, size, rotation) -> (content key, png, etag)
 _lock = None
 
 
 async def h_png(req):
     if Image is None:
-        raise web.HTTPServiceUnavailable(text="Pillow absent : type 0 indisponible")
+        raise web.HTTPServiceUnavailable(text="Pillow missing: type 0 unavailable")
     dash = _sd["get_dash"](req)
     ref = req.query.get("view") or _sd["default_ref"](dash)
     view, idx = _sd["pick_view"](dash, ref)
     if view is None or dash.config is None:
-        raise web.HTTPServiceUnavailable(text=dash.error or "Connexion à Home Assistant…",
+        raise web.HTTPServiceUnavailable(text=dash.error or "Connecting to Home Assistant…",
                                          headers={"Retry-After": "10"})
     try:
         W = max(200, min(2000, int(req.query.get("w") or 600)))
@@ -1339,10 +1334,10 @@ async def h_png(req):
     except ValueError:
         raise web.HTTPBadRequest(text="w, h, rotate : nombres attendus")
     if rot in (90, 270):
-        W, H = H, W     # w × h = taille de l'écran ; le dessin se fait dans le sens de lecture
-    var = dash.variant("t1")      # fait charger historiques, prévisions et templates
+        W, H = H, W     # w x h = screen size; drawing is done in the reading direction
+    var = dash.variant("t1")      # makes the histories, forecasts and templates load
     if var is None:
-        raise web.HTTPServiceUnavailable(text="Rendu en préparation", headers={"Retry-After": "5"})
+        raise web.HTTPServiceUnavailable(text="Rendering in progress", headers={"Retry-After": "5"})
     vidx = view["index"]
     hub = dash.hub
     content = (dash.cv, max(var.slot_ver or [0]), hub.connected, int(time.time() // 60))
@@ -1356,7 +1351,7 @@ async def h_png(req):
             t0 = time.time()
             png = await asyncio.get_running_loop().run_in_executor(None, draw_png, dash, vidx, W, H, rot)
             ms = (time.time() - t0) * 1000
-            log.debug("[%s] type 0 vue %d : %d octets en %.0f ms", dash.name, vidx, len(png), ms)
+            log.debug("[%s] type 0 view %d: %d bytes in %.0f ms", dash.name, vidx, len(png), ms)
             etag = '"%s"' % hashlib.md5(png).hexdigest()[:16]
             ent = (content, png, etag, ms)
             _cache[ck] = ent
@@ -1369,7 +1364,7 @@ async def h_png(req):
 
 @web.middleware
 async def type0(req, handler):
-    """/<nom>?type=0 -> /<nom>.png (même vue)."""
+    """/<name>?type=0 -> /<name>.png (same view)."""
     if req.query.get("type") == "0" and re.match(r"^/[A-Za-z0-9][A-Za-z0-9_-]*/?$", req.path):
         q = {k: v for k, v in req.query.items() if k != "type"}
         raise web.HTTPFound(req.rel_url.with_path("/%s.png" % req.path.strip("/")).with_query(q))
@@ -1380,7 +1375,7 @@ _sd = {}
 
 
 def setup(app, get_dash, pick_view, default_ref):
-    """À appeler avant la route /{name} (sinon « tab3.png » serait pris pour un dashboard)."""
+    """To call before the /{name} route (otherwise "tab3.png" would be taken for a dashboard)."""
     _sd.update(get_dash=get_dash, pick_view=pick_view, default_ref=default_ref)
     app.middlewares.append(type0)
     app.router.add_get("/{name}.png", h_png)
