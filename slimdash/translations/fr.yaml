@@ -19,7 +19,7 @@ configuration:
         name: Vues
         description: >-
           Numéros des vues à afficher, séparés par des virgules (0 = première vue),
-          ex. 0,2,4. Vide = première vue. Chaque vue devient un onglet.
+          ex. 0,2,4. Vide = 0. Chaque vue devient un onglet.
       tabs_bottom:
         name: Onglets en bas
         description: >-
@@ -33,7 +33,7 @@ configuration:
       device:
         name: Type d'appareil
         description: >-
-          auto = détecté d'après le navigateur (recommandé). Sinon : type 1 (Android 4.4,
+          auto = détecté d'après le navigateur (recommandé ; vide = auto). Sinon : type 1 (Android 4.4,
           iOS 7-9), type 2 (navigateurs 2016-2019) ou type 3 (navigateurs récents).
       theme:
         name: Thème

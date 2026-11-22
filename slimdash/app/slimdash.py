@@ -28,7 +28,7 @@ import icons
 import render
 import theme
 
-VERSION = "0.8.72"
+VERSION = "0.8.80"
 HERE = os.path.dirname(os.path.abspath(__file__))
 log = logging.getLogger("slimdash")
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
@@ -155,6 +155,8 @@ def load_options():
         views = [x.strip() for x in str(d.get("views") or "").split(",") if x.strip()]
         if not views and view_in_url:
             views = [view_in_url]
+        if not views:
+            views = ["0"]       # nothing given: the first view
         # Refresh: 0 = real time; otherwise every N s (5 to 3600).
         try:
             refresh = int(d.get("refresh") or 0)
@@ -502,6 +504,7 @@ def iso(ts):
 # --------------------------------------------------------------------------
 # Client WebSocket Home Assistant
 # --------------------------------------------------------------------------
+TR_ATTR = re.compile(r"^component\.climate\.entity_component\.[a-z0-9_]+\.state_attributes\.([a-z_]+)\.state\.([\w-]+)$")
 TR_KEY = re.compile(r"^component\.([a-z0-9_]+)\.entity_component\.([a-z0-9_]+)\.state\.([\w-]+)$")
 
 
@@ -814,6 +817,8 @@ class HAClient:
             cfg = await self.send({"type": "get_config"}) or {}
             if i18n.set_language(cfg.get("language")):
                 log.info("Language: %s", i18n.LANG)
+            if render.set_temp_unit((cfg.get("unit_system") or {}).get("temperature")):
+                log.info("Temperature unit: %s", render.TEMP_UNIT)
             res = await self.send({"type": "frontend/get_translations",
                                    "language": cfg.get("language") or "en",
                                    "category": "entity_component"}) or {}
@@ -822,13 +827,16 @@ class HAClient:
                 m = TR_KEY.match(k)
                 if m and isinstance(v, str):
                     tr["%s.%s.%s" % m.groups()] = v
+                m = TR_ATTR.match(k)        # climate: hvac_action, fan_mode...
+                if m and isinstance(v, str):
+                    tr["attr.%s.%s" % m.groups()] = v
             if tr:
                 render.TR.clear()
                 render.TR.update(tr)
                 log.info("%d state labels taken from Home Assistant", len(tr))
         except Exception as e:
             log.warning("Cannot read state labels: %s", e)
-        hub.look = json.dumps([hub.palette, sorted(hub.palettes.items()), len(render.TR), i18n.LANG],
+        hub.look = json.dumps([hub.palette, sorted(hub.palettes.items()), len(render.TR), i18n.LANG, render.TEMP_UNIT],
                               sort_keys=True)
 
     def _themes_updated(self, ev):
@@ -1084,6 +1092,15 @@ class HAClient:
 
     async def run_action(self, a, value=None):
         kind = a.get("kind")
+        if kind == "tset":      # thermostat dial; value = position 0..1000 between min and max
+            eid = a["entity"]
+            at = (self.hub.states.get(eid) or {}).get("a") or {}
+            lo, hi, stp = render.climate_range(at)
+            f = max(0.0, min(1.0, float(value) / 1000.0))
+            t = round((lo + (hi - lo) * f) / stp) * stp
+            t = max(lo, min(hi, t))
+            return await self.call_service("climate", "set_temperature",
+                                           {"temperature": round(t, 2)}, {"entity_id": eid})
         if kind == "light":
             # brightness (b) or temperature (k) slider; value = position 0..1000
             eid = a["entity"]
@@ -1117,6 +1134,12 @@ class HAClient:
         st = self.hub.states.get(eid) or {}
         s = st.get("s")
         dom = render.domain_of(eid)
+        if kind == "cmode":     # climate: HVAC mode (4-position selector) or fan mode buttons
+            fan = a.get("what") == "fan"
+            mode = str(a.get("value"))
+            return await self.call_service("climate", "set_fan_mode" if fan else "set_hvac_mode",
+                                           {("fan_mode" if fan else "hvac_mode"): mode},
+                                           {"entity_id": eid})
         if kind == "temp":
             cur = (st.get("a") or {}).get("temperature")
             if cur is None:

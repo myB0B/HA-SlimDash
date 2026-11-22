@@ -17,8 +17,8 @@ configuration:
       views:
         name: Views
         description: >-
-          Comma-separated view numbers (0 = first view), e.g. 0,2,4. Empty = first
-          view. Each view becomes a tab.
+          Comma-separated view numbers (0 = first view), e.g. 0,2,4. Empty = 0. Each
+          view becomes a tab.
       tabs_bottom:
         name: Tabs at the bottom
         description: >-
@@ -32,7 +32,7 @@ configuration:
       device:
         name: Device type
         description: >-
-          auto = detected from the browser (recommended). Otherwise: type 1 (Android 4.4,
+          auto = detected from the browser (recommended; empty = auto). Otherwise: type 1 (Android 4.4,
           iOS 7-9), type 2 (2016-2019 browsers) or type 3 (recent browsers).
       theme:
         name: Theme

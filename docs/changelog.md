@@ -317,3 +317,31 @@ indicator only), theme background image (cost on old devices).
   Assistant only translates a few states, the others use the English fallback.
 - 0.8.72: Warning section moved to the top of the docs (DOCS.md, right after the introduction) and of the
   Info tab (README.md, before Why); Hungarian (`hu`) added to the supported languages.
+- 0.8.73: `tile` card: `state_content` (state, last_changed, last_updated, attribute; list) is now
+  handled, the relative time stays up to date (issue 4). Temperature unit read from the Home Assistant
+  unit system (get_config) and used when an entity gives none: climate tiles, thermostat, weather, e-ink
+  (issue 5); thermostat step = `target_temp_step`, else 1 in Fahrenheit and 0.5 in Celsius. Schema:
+  `tabs_bottom`, `views`, `refresh` and `device` optional, so a dashboard added without touching
+  them can be saved (issue 6).
+- 0.8.74: empty `views` = `0` (explicit), empty `device` = `auto`; both said in the option descriptions
+  (en, fr) and in DOCS.md.
+- 0.8.75: `thermostat` card redone like HA (title, 270 degree dial with set point handle, current
+  temperature mark and mode-coloured arc, action, set point, current temperature, - / + buttons);
+  features `climate-hvac-modes` and `climate-fan-modes` (thermostat and tile; action `cmode` ->
+  set_hvac_mode / set_fan_mode). bubble-card: card-level `state_content` shows under the name.
+- 0.8.76: thermostat card: dial dragged by finger (action `tset`: position -> temperature rounded to the
+  step, between min_temp and max_temp), HVAC mode buttons shown by default, thermometer icon inline,
+  centre texts narrower than the ring (they hid the touches).
+- 0.8.77: thermostat card: - / + buttons change the set point at once on the page and send it once
+  0.6 s after the last tap; modes (Off, Heat, Cool, Auto: 4-position selector, short names per language,
+  `i18n.mode_label`) in a menu (three-dot button top right, one mode per line, closes on choice) so the
+  card keeps the size of the HA one; the tile feature keeps a one-line row.
+- 0.8.78: thermostat dial like HA (measured on the real card: heat = fill min -> set point, cool = set
+  point -> max, other modes = whole ring, half opacity; active part current -> set point; handle border and
+  action text in the mode colour; off = no fill). hvac_action and fan_mode labels from the HA translations
+  (`TR_ATTR`, `render.tr_attr`). `features` of the thermostat card shown as rows at the bottom (like HA),
+  `style: icons` for the HVAC modes; the three-dot menu stays the default without features.
+- 0.8.79: thermostat card option `show_current_as_primary`: current temperature in the big number, set
+  point in the small line (target icon, from memory of the HA card, not measured); the - / + buttons update
+  that small line locally (`data-sw` on `.thm`, `.thtv`).
+- 0.8.80: thermostat card title centred like HA (measured: centred over the whole card, 16 px).

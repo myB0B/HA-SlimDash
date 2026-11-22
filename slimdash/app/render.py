@@ -30,6 +30,45 @@ HEADER_TOGGLE = ("fan", "input_boolean", "light", "switch", "group", "automation
 # Rows whose value can be edited in the entities card (field, list, time).
 EDIT_DOMAINS = ("number", "input_number", "select", "input_select", "time", "input_datetime",
                 "text", "input_text", "date")
+# Temperature unit of Home Assistant (unit system), used when an entity gives none (climate...).
+TEMP_UNIT = "°C"
+
+
+def climate_range(a):
+    """(min, max, step) of the set point of a climate entity, in its unit."""
+    fahr = a.get("temperature_unit", TEMP_UNIT) == "\u00b0F"
+
+    def f(k, d):
+        try:
+            return float(a.get(k))
+        except (TypeError, ValueError):
+            return d
+    lo, hi = f("min_temp", 45.0 if fahr else 7.0), f("max_temp", 95.0 if fahr else 35.0)
+    if hi <= lo:
+        hi = lo + 1
+    return lo, hi, f("target_temp_step", 1.0 if fahr else 0.5) or 0.5
+
+
+def set_temp_unit(unit):
+    """Unit from get_config: "°C" or "°F" (anything else keeps °C). True if changed."""
+    global TEMP_UNIT
+    new = unit if unit in ("°C", "°F") else "°C"
+    changed = new != TEMP_UNIT
+    TEMP_UNIT = new
+    return changed
+
+
+# Climate: colour of each mode (dial arc) and label of the action, English fallbacks.
+CLIMATE_COLORS = {"heat": "#ff6f22", "cool": "#2196f3", "heat_cool": "#4caf50", "auto": "#4caf50",
+                  "dry": "#ffc107", "fan_only": "#00bcd4"}      # measured on the HA thermostat card
+CLIMATE_OFF = "#9e9e9e"
+MODE_ICONS = {"off": "mdi:power", "heat": "mdi:fire", "cool": "mdi:snowflake", "auto": "mdi:thermostat-auto",
+              "heat_cool": "mdi:sun-snowflake-variant", "dry": "mdi:water-percent", "fan_only": "mdi:fan"}
+ACTION_COLORS = {"heating": "heat", "cooling": "cool", "drying": "dry", "fan": "fan_only"}
+ACTION_TXT = {"heating": "Heating", "cooling": "Cooling", "idle": "Idle", "off": "Off",
+              "drying": "Drying", "fan": "Fan", "preheating": "Preheating",
+              "defrosting": "Defrosting"}
+
 RUN_DOMAINS = {"scene": "Activate", "script": "Run", "button": "Press",
                "input_button": "Press"}
 
@@ -95,6 +134,11 @@ def tr_state(dom, device_class, s):
     if t is None and device_class:
         t = TR.get("%s._.%s" % (dom, s))
     return t
+
+
+def tr_attr(name, value):
+    """HA label of the value of a climate attribute (hvac_action, fan_mode...), or None."""
+    return TR.get("attr.%s.%s" % (name, value)) if value is not None else None
 
 
 def weather_txt(s):
@@ -252,13 +296,13 @@ def fmt_state(st, eid, decimals=None):
         temp = a.get("temperature")
         txt = weather_txt(s)
         if temp is not None:
-            txt += " %s %s" % (num(temp) or temp, a.get("temperature_unit", "°C"))
+            txt += " %s %s" % (num(temp) or temp, a.get("temperature_unit", TEMP_UNIT))
         return txt
     if dom == "climate":
         cur = a.get("current_temperature")
         txt = t or (STATE_TXT.get(s, s) if s != "off" else "Off")
         if cur is not None:
-            txt += " · %s °C" % (num(cur) or cur)
+            txt += " · %s %s" % (num(cur) or cur, a.get("temperature_unit", TEMP_UNIT))
         return txt
     if dom == "cover" and a.get("current_position") is not None and s == "open":
         return "%s %s %%" % (t or "Open", a.get("current_position"))
@@ -747,6 +791,29 @@ class Builder:
         val = fn()[0]
         c = ' class="%s"' % cls if cls else ""
         return '<%s id="%s"%s>%s</%s>' % (tag, sid, c, val, tag)
+
+    def content_slots(self, eid, content):
+        """Tile `state_content` (text or list: "state", "last_changed", "last_updated", attribute
+        name) -> HTML joined with " · ", or None when the option is absent (plain state)."""
+        sc = [content] if isinstance(content, str) else \
+            [x for x in (content or []) if isinstance(x, str)] if isinstance(content, list) else []
+        if not sc:
+            return None
+        parts = []
+        for k in sc[:4]:
+            if k == "state":
+                parts.append(self.text_slot(eid))
+            elif k in ("last_changed", "last_updated", "last-changed", "last-updated"):
+                def fn(e=eid):      # relative time, like HA ("3 hours ago")
+                    st = self.st(e)
+                    return (rel_span(st.get("lc") if st else None), None)
+                parts.append(self.text_slot(eid, fn))
+            elif re.match(r"^\w+$", k):
+                def fn(e=eid, k=k):
+                    v = ((self.st(e) or {}).get("a") or {}).get(k)
+                    return (E("—" if v is None else (num(v) or str(v))), None)
+                parts.append(self.text_slot(eid, fn))
+        return " · ".join(parts) if parts else None
 
     def value_fn(self, eid, decimals=None):
         """State of an entity, the unit apart (displayed smaller)."""
@@ -1529,9 +1596,15 @@ class Builder:
         def tgt(e=eid):
             st = self.st(e)
             v = (st.get("a") or {}).get("temperature") if st else None
-            return (E(num(v) + " °C") if v is not None and num(v) else "—", None)
-        minus = self.action_attrs({"kind": "temp", "entity": eid, "step": -0.5})
-        plus = self.action_attrs({"kind": "temp", "entity": eid, "step": 0.5})
+            u = (st.get("a") or {}).get("temperature_unit", TEMP_UNIT) if st else TEMP_UNIT
+            return (E("%s %s" % (num(v), u)) if v is not None and num(v) else "—", None)
+        a0 = (self.st(eid) or {}).get("a") or {}
+        try:    # step of the entity, else 1 degree in Fahrenheit and 0.5 in Celsius
+            stp = float(a0.get("target_temp_step") or 0) or (1.0 if TEMP_UNIT == "°F" else 0.5)
+        except (TypeError, ValueError):
+            stp = 0.5
+        minus = self.action_attrs({"kind": "temp", "entity": eid, "step": -stp})
+        plus = self.action_attrs({"kind": "temp", "entity": eid, "step": stp})
         return '<span class="btn sm"%s>&minus;</span> %s <span class="btn sm"%s>+</span>' % (
             minus, self.text_slot(eid, tgt, cls="tgt"), plus)
 
@@ -1602,6 +1675,11 @@ class Builder:
             elif f.get("type") == "light-color-favorites" and domain_of(eid) == "light":
                 extra += self.light_favorites(eid)
                 nfeat += 1
+            elif f.get("type") in ("climate-hvac-modes", "climate-fan-modes") and domain_of(eid) == "climate":
+                m = self.climate_modes(eid, f)
+                if m:
+                    extra += m
+                    nfeat += 1
             elif f.get("type") in ("cover-open-close", "cover-position") and domain_of(eid) == "cover":
                 extra += '<div class="cvb">%s</div>' % self.cover_buttons(eid)
                 nfeat += 1
@@ -1623,7 +1701,8 @@ class Builder:
             pad = "padding-top:%dpx" % pt
             extra = '<div class="fsp" style="height:%dpx"></div>' % max(0, top - pt - 36 - 12) + extra
             tfx = " tfx"
-        return self.tile_html(eid, E(self.nm(eid, c.get("name"))), self.text_slot(eid), act,
+        state = self.content_slots(eid, c.get("state_content")) or self.text_slot(eid)
+        return self.tile_html(eid, E(self.nm(eid, c.get("name"))), state, act,
                               cfg_icon=c.get("icon"), extra=extra, cols=cols, rows=rows, side=side,
                               vertical=vertical, color=c.get("color"), style_extra=pad,
                               base_extra=(" tf" if extra else "") + tfx + (" tfi" if side else ""))
@@ -1880,7 +1959,7 @@ class Builder:
             a = st.get("a") or {}
             s = st.get("s")
             t = a.get("temperature")
-            unit = a.get("temperature_unit", "°C")
+            unit = a.get("temperature_unit", TEMP_UNIT)
             second = ""
             items = (self.store.fc.get(k) or []) if fcst else []
             if items and ftype != "hourly" and items[0].get("templow") is not None:
@@ -1923,14 +2002,187 @@ class Builder:
     def c_custom_meteofrance_weather_card(self, c):
         return self.c_weather_forecast(dict(c, show_current=True, show_forecast=True))
 
+    def climate_range(self, a):
+        return climate_range(a)
+
     def c_thermostat(self, c):
+        """HA "thermostat" card: title, 270 degree dial (set point handle, current temperature
+        mark, arc between them in the colour of the mode), action, set point, current
+        temperature and - / + buttons; optional mode features."""
         eid = c.get("entity")
         if not eid:
             return ""
-        return ('<div class="card"><div class="row">%s<span class="nm">%s<br>%s</span>'
-                '<span class="rt">%s</span></div></div>' % (
-                    self.row_icon(eid), E(self.nm(eid, c.get("name"))),
-                    self.text_slot(eid, cls="sub"), self.climate_ctrl(eid)))
+        arc = "M 145 0 A 145 145 0 1 1 0 -145"
+        full = 683.3
+        dark = self.pal().get("dark", True)
+
+        def seg(a0, a1, width, color, cap="round", op=1):
+            return ('<path d="%s" style="stroke:%s;stroke-width:%d;stroke-linecap:%s;opacity:%s" '
+                    'stroke-dasharray="%.1f 1000" stroke-dashoffset="%.1f"/>' % (
+                        arc, color, width, cap, op, max(0.1, (a1 - a0) * full), -a0 * full))
+
+        def dial(e=eid):
+            st = self.st(e) or {}
+            a = st.get("a") or {}
+            lo, hi, _ = self.climate_range(a)
+
+            def fr(v):
+                try:
+                    return max(0.0, min(1.0, (float(v) - lo) / (hi - lo)))
+                except (TypeError, ValueError):
+                    return None
+            ft, fc = fr(a.get("temperature")), fr(a.get("current_temperature"))
+            mode = st.get("s")
+            col = CLIMATE_COLORS.get(mode)
+            body = seg(0, 1, 24, "#bdbdbd" if dark else self.pal()["inact"], op=".3" if dark else ".45")
+            if col:
+                if mode == "heat" and ft is not None:        # fill: min -> set point
+                    body += seg(0, ft, 24, col, op=".5")
+                elif mode == "cool" and ft is not None:      # fill: set point -> max
+                    body += seg(ft, 1, 24, col, op=".5")
+                elif mode not in ("heat", "cool"):           # auto, heat_cool...: whole ring
+                    body += seg(0, 1, 24, col, op=".5")
+                if ft is not None and fc is not None:        # still to do: current -> set point
+                    if mode == "heat" and fc < ft:
+                        body += seg(fc, ft, 24, col)
+                    elif mode == "cool" and fc > ft:
+                        body += seg(ft, fc, 24, col)
+            if fc is not None:
+                body += seg(fc, fc, 8, "#ffffff" if dark else "#555555", op=".5")
+            if ft is not None:
+                body += seg(ft, ft, 24, col or CLIMATE_OFF) + seg(ft, ft, 18, "#ffffff")
+            return ('<svg viewBox="0 0 320 320"><g transform="translate(160 160) rotate(135)">%s</g></svg>' % body, None)
+
+        def acol(e):
+            """Colour of the action (heating, cooling...) while it is running, else None."""
+            st = self.st(e) or {}
+            k = ACTION_COLORS.get((st.get("a") or {}).get("hvac_action"))
+            return CLIMATE_COLORS.get(k) if k and st.get("s") != "off" else None
+
+        def label(e=eid):
+            st = self.st(e) or {}
+            act = (st.get("a") or {}).get("hvac_action")
+            if st.get("s") != "off" and act:
+                txt = E(tr_attr("hvac_action", act) or ACTION_TXT.get(act, str(act)))
+                c1 = acol(e)
+                return ('<span style="color:%s">%s</span>' % (c1, txt) if c1 else txt, None)
+            m = st.get("s")
+            return (E(tr_state("climate", None, m) or STATE_TXT.get(m) or ("Off" if m == "off" else str(m).replace("_", " ").capitalize())), None)
+
+        swap = bool(c.get("show_current_as_primary"))   # HA option: current temperature in big, set point small
+
+        def tfmt(f, nd):
+            return ("%.*f" % (nd, f)).replace(".", i18n.D["dec"])
+
+        def target(e=eid):
+            a = (self.st(e) or {}).get("a") or {}
+            u = a.get("temperature_unit", TEMP_UNIT)
+            tv = a.get("temperature")
+            lo, hi, stp = self.climate_range(a)
+            nd = 1 if stp % 1 else 0
+            if not swap and tv is None and a.get("target_temp_low") is not None \
+                    and a.get("target_temp_high") is not None:
+                return ('<span class="thn">%s \u2013 %s</span>' % (
+                    E(num(a["target_temp_low"]) or ""), E(num(a["target_temp_high"]) or "")), None)
+            try:
+                f = float((a.get("current_temperature") if swap else tv))
+            except (TypeError, ValueError):
+                return ('<span class="thn">\u2014</span>', None)
+            if nd:
+                ip, dp = ("%.1f" % f).split(".")
+                addon = '<span class="thu">%s</span><span class="thdc">%s%s</span>' % (E(u), i18n.D["dec"], dp)
+            else:
+                ip, addon = "%d" % round(f), '<span class="thu">%s</span>' % E(u)
+            data = ""
+            try:
+                data = ('<span class="thm" style="display:none" data-v="%s" data-lo="%s" data-hi="%s" '
+                        'data-nd="%d" data-dec="%s" data-u="%s"%s></span>' % (
+                            float(tv), lo, hi, nd, E(i18n.D["dec"]), E(u), ' data-sw="1"' if swap else ""))
+            except (TypeError, ValueError):
+                pass
+            return (data + '<span class="thn">%s</span><span class="thx">%s</span>' % (E(group(ip)), addon), None)
+
+        def current(e=eid):
+            a = (self.st(e) or {}).get("a") or {}
+            u = a.get("temperature_unit", TEMP_UNIT)
+            lo, hi, stp = self.climate_range(a)
+            v = a.get("temperature") if swap else a.get("current_temperature")
+            if v is None:
+                return ("&nbsp;", None)
+            try:
+                txt = tfmt(float(v), 1 if stp % 1 else 0) if swap else (num(v) or str(v))
+            except (TypeError, ValueError):
+                txt = str(v)
+            html = (self.icon(icons.from_mdi("mdi:target" if swap else "mdi:thermometer")) + " "
+                    + '<span class="thtv">%s %s</span>' % (E(txt), E(u)))
+            c1 = acol(e)
+            return ('<span style="color:%s">%s</span>' % (c1, html) if c1 else html, None)
+
+        stp = self.climate_range((self.st(eid) or {}).get("a") or {})[2]
+        minus = ' data-tp="%s"' % -stp      # s.js: immediate local change, one send (dial action)
+        plus = ' data-tp="%s"' % stp
+
+        def slot(fn, cls, attrs=""):
+            return '<div class="%s" id="%s"%s>%s</div>' % (cls, self.slot([eid], fn), attrs, fn()[0])
+        # the dial is dragged by s.js (data-s, ring only: data-r) and sent on release
+        dial_attrs = ' data-r="1" data-t="1" data-f="%.1f"%s' % (
+            full, self.action_attrs({"kind": "tset", "entity": eid}).replace("data-a", "data-s"))
+        feats_cfg = [f for f in c.get("features") or []
+                     if isinstance(f, dict) and f.get("type") in ("climate-hvac-modes", "climate-fan-modes")]
+        if feats_cfg:       # features of the card: rows of buttons at the bottom, like HA
+            menu = "".join(self.climate_modes(eid, f) for f in feats_cfg)
+        else:               # none: the modes in a menu (three dots), the card keeps its size
+            feats = self.climate_modes(eid, {"type": "climate-hvac-modes"}, menu=True)
+            menu = ('<span class="thmb" data-tm="1">%s</span><div class="card thmn" style="display:none">%s</div>' % (
+                self.icon(icons.from_mdi("mdi:dots-vertical")), feats)) if feats else ""
+        return ('<div class="card thc"><div class="thti">%s</div><div class="thw">%s%s%s%s'
+                '<div class="thbs"><span class="thb"%s>%s</span><span class="thb"%s>%s</span></div></div>%s</div>' % (
+                    E(self.nm(eid, c.get("name"))), slot(dial, "thd", dial_attrs), slot(label, "thl"),
+                    slot(target, "thv"), slot(current, "ths"),
+                    minus, self.icon(icons.from_mdi("mdi:minus")),
+                    plus, self.icon(icons.from_mdi("mdi:plus")), menu))
+
+    def climate_modes(self, eid, f, menu=False):
+        """Features climate-hvac-modes / climate-fan-modes: one button per mode, the active
+        one highlighted (kept up to date by a slot)."""
+        t = f.get("type")
+        if t not in ("climate-hvac-modes", "climate-fan-modes"):
+            return ""
+        fan = t == "climate-fan-modes"
+        have = ((self.st(eid) or {}).get("a") or {}).get("fan_modes" if fan else "hvac_modes") or []
+        want = f.get("fan_modes" if fan else "hvac_modes")
+        if isinstance(want, list):
+            modes = [m for m in want if isinstance(m, str)]
+        elif fan:
+            modes = list(have)
+        else:       # default: on/off, heat, cool, auto (4 buttons on one line)
+            modes = ["off", "heat", "cool", "auto" if "auto" in have or "heat_cool" not in have else "heat_cool"]
+        modes = [m for m in modes if not have or m in have][:6]
+        if not modes:
+            return ""
+        w = 100.0 / len(modes) - 2
+        acts = []
+        for m in modes:
+            what = "fan" if fan else "hvac"
+            acts.append((m, self.action_attrs({"kind": "cmode", "entity": eid, "what": what, "value": m})))
+
+        def label(m):
+            if fan:
+                return tr_attr("fan_mode", m) or m.replace("_", " ").capitalize()
+            return (i18n.mode_label(m) or tr_state("climate", None, m) or STATE_TXT.get(m)
+                    or m.replace("_", " ").capitalize())
+
+        as_icons = f.get("style") == "icons" and not fan and not menu     # HA "icons" style
+
+        def row(e=eid):
+            st = self.st(e) or {}
+            cur = (st.get("a") or {}).get("fan_mode") if fan else st.get("s")
+            return ("".join('<span class="btn cm%s"%s%s title="%s">%s</span>' % (
+                " on" if m == cur else "", at,
+                "" if menu else ' style="width:%.1f%%"' % w, E(label(m)),
+                self.icon(icons.from_mdi(MODE_ICONS.get(m, "mdi:thermostat"))) if as_icons else E(label(m)))
+                for m, at in acts), None)
+        return '<div class="cmb%s" id="%s">%s</div>' % (" cmv" if menu else "", self.slot([eid], row), row()[0])
 
     def graph_rows(self, c, entities, hours, title):
         """Like HA: title, graph, then legend (colour dot, name, value)."""
@@ -2443,7 +2695,7 @@ class Builder:
                     if sc:
                         txt.append(weather_txt(st.get("s")))
                     if stp and a.get("temperature") is not None:
-                        txt.append("%s %s" % (num(a["temperature"]), a.get("temperature_unit", "°C")))
+                        txt.append("%s %s" % (num(a["temperature"]), a.get("temperature_unit", TEMP_UNIT)))
                     return (self.icon(icons.WEATHER.get(st.get("s"), "cloud")) + E(" ".join(txt)), None)
                 sid = self.slot([eid], wfn)
                 out.append('<span id="%s" class="badge wchip%s">%s</span>' % (
@@ -2506,7 +2758,8 @@ class Builder:
         # Values on the right, on the same line as the name (like bubble-card).
         side = '<span class="subs">%s</span>' % "".join(chips) if chips else ""
         # Bubble only shows the state under the name if show_state is on.
-        state = self.text_slot(eid) if c.get("show_state") else ""
+        # New format: state_content (text or list) replaces show_state.
+        state = self.content_slots(eid, c.get("state_content"))             or (self.text_slot(eid) if c.get("show_state") else "")
         cols, rows = self.size(c, 12 if chips else 6, 1)
         return self.tile_html(eid, E(self.nm(eid, c.get("name"))), state, act,
                               cfg_icon=c.get("icon"), side=side, cols=cols, rows=rows,

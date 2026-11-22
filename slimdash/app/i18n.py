@@ -171,6 +171,22 @@ LANGS = {
 D = LANGS["en"]
 
 
+# Short names of the HVAC modes heat / cool / auto / off (4-position selector).
+MODE_TXT = {
+    "en": ("Heat", "Cool", "Auto", "Off"), "fr": ("Chaud", "Froid", "Auto", "Arrêt"),
+    "de": ("Heizen", "Kühlen", "Auto", "Aus"), "es": ("Calor", "Frío", "Auto", "Apagado"),
+    "it": ("Caldo", "Freddo", "Auto", "Spento"), "pt": ("Quente", "Frio", "Auto", "Desl."),
+    "nl": ("Warm", "Koud", "Auto", "Uit"), "ru": ("Тепло", "Холод", "Авто", "Выкл"),
+    "pl": ("Grzanie", "Chłodz.", "Auto", "Wył."), "hu": ("Fűtés", "Hűtés", "Auto", "Ki"),
+}
+
+
+def mode_label(mode):
+    """Short label of an HVAC mode in the language of Home Assistant, or None."""
+    i = {"heat": 0, "cool": 1, "auto": 2, "heat_cool": 2, "off": 3}.get(mode)
+    return None if i is None else MODE_TXT.get(LANG, MODE_TXT["en"])[i]
+
+
 def set_language(code):
     """Language of Home Assistant ("fr", "pt-BR"...) -> the supported language, else English.
     Returns True if the language changed."""

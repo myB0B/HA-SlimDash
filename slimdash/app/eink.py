@@ -739,7 +739,7 @@ class Scene:
             st = self.st(eid) or {}
             a = st.get("a") or {}
             s = st.get("s")
-            unit = a.get("temperature_unit", "°C")
+            unit = a.get("temperature_unit", render.TEMP_UNIT)
             self.I(icons.WEATHER.get(s, "cloud"), x + 12, cy, 52)
             temp = ("%s %s" % (render.num(a.get("temperature")), unit)) if a.get("temperature") is not None else ""
             second = ""

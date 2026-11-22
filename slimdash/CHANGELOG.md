@@ -3,6 +3,28 @@
 All notable changes to SlimDash. The format follows [Keep a Changelog](https://keepachangelog.com/).
 The detailed development log (measurements, decisions) is in `docs/changelog.md` of the repository.
 
+## 0.8.75
+
+### Added
+- `thermostat` card like Home Assistant: dial with set point and current temperature, action, - / + buttons.
+  The dial can be dragged to set the temperature, and a menu (three dots, top right) changes the mode
+  (off, heat, cool, auto). Like in Home Assistant, the `features` of the card (`climate-hvac-modes`,
+  `climate-fan-modes`, `style: icons`) are shown as buttons at the bottom, and `show_current_as_primary`
+  swaps the set point and the current temperature.
+- `climate-hvac-modes` and `climate-fan-modes` features (thermostat and tile cards): change the HVAC mode
+  or the fan mode.
+
+### Fixed
+- Bubble card: `state_content` (e.g. last updated) is shown under the name.
+
+## 0.8.73
+
+### Fixed
+- Tile cards: `state_content` is handled, e.g. `last_changed` shows a relative time ("3 hours ago").
+- Temperatures of climate entities (tiles, thermostat) use the temperature unit of Home Assistant
+  (Fahrenheit was shown as Celsius); the thermostat buttons follow the step of the entity.
+- A dashboard added in the options can be saved without touching "Tabs at the bottom".
+
 ## 0.8.71
 
 ### Added

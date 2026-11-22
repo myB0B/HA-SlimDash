@@ -95,10 +95,10 @@ One item per device (or group of identical devices).
 |---|---|
 | `name` | Short name used in the address. Letters, digits, `-` and `_`. Case does not matter. |
 | `dashboard` | Dashboard path in Home Assistant (`lovelace` = default dashboard). |
-| `views` | Comma-separated view numbers, starting at `0`. Empty = first view. |
+| `views` | Comma-separated view numbers, starting at `0`. Empty = `0` (first view). |
 | `tabs_bottom` | Tab bar at the bottom of the screen (on) or at the top (off). |
 | `refresh` | `0` = live updates (recommended). Otherwise the page reloads every N seconds (5–3600), for devices that cannot keep a connection open, such as e-readers. |
-| `device` | `auto` (recommended) detects the type from the browser. Force `type 1`, `type 2` or `type 3` if the detection is wrong. |
+| `device` | `auto` (recommended, also when empty) detects the type from the browser. Force `type 1`, `type 2` or `type 3` if the detection is wrong. |
 | `theme` | `view` (default): the theme chosen in each view of the dashboard. `ha light` / `ha dark`: the Home Assistant default theme, light or dark, for all views. |
 
 ### Other options

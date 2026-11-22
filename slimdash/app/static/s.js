@@ -224,13 +224,57 @@
       /* a slider handles the touch itself: no action of the card underneath */
       if (el.getAttribute('data-s') !== null) { return null; }
       if (el.getAttribute('data-a') !== null || el.getAttribute('data-n') !== null ||
-          el.getAttribute('data-p') !== null) { return el; }
+          el.getAttribute('data-p') !== null || el.getAttribute('data-tp') !== null ||
+          el.getAttribute('data-tm') !== null) { return el; }
       el = el.parentNode;
     }
     return null;
   }
+  /* thermostat - / + buttons: immediate local change of the set point (number and dial handle),
+     one send (dial action) 0.6 s after the last tap */
+  var thTimer = null;
+  function thMove(dial, f) {
+    var p = dial.getElementsByTagName('path'), o = (-f * parseFloat(dial.getAttribute('data-f'))).toFixed(1);
+    if (p.length > 1) {
+      p[p.length - 1].setAttribute('stroke-dashoffset', o);
+      p[p.length - 2].setAttribute('stroke-dashoffset', o);
+    }
+  }
+  function thStep(el) {
+    var root = el, m, dial, lo, hi, nd, v, f, n, d, s;
+    while (root && !(root.className && (' ' + root.className + ' ').indexOf(' thc ') >= 0)) { root = root.parentNode; }
+    m = root && root.querySelector('.thm');
+    dial = root && root.querySelector('.thd');
+    if (!m || !dial) { return; }
+    lo = parseFloat(m.getAttribute('data-lo')); hi = parseFloat(m.getAttribute('data-hi'));
+    nd = parseInt(m.getAttribute('data-nd'), 10);
+    v = parseFloat(m.getAttribute('data-v')) + parseFloat(el.getAttribute('data-tp'));
+    v = Math.min(hi, Math.max(lo, v));
+    m.setAttribute('data-v', v);
+    f = (v - lo) / (hi - lo);
+    thMove(dial, f);
+    s = v.toFixed(nd).split('.');
+    if (m.getAttribute('data-sw') !== null) {     /* current temperature in big: the set point is the small one */
+      n = root.querySelector('.thtv');
+      if (n) { n.innerHTML = s[0] + (nd ? m.getAttribute('data-dec') + s[1] : '') + ' ' + m.getAttribute('data-u'); }
+    } else {
+      n = root.querySelector('.thn'); d = root.querySelector('.thdc');
+      if (n) { n.innerHTML = s[0]; }
+      if (d && nd) { d.innerHTML = m.getAttribute('data-dec') + s[1]; }
+    }
+    flash(el, 'prs', 200);
+    dial.setAttribute('data-v', Math.round(f * 1000));
+    if (thTimer) { clearTimeout(thTimer); }
+    thTimer = setTimeout(function () { thTimer = null; slSend(dial); }, 600);
+  }
   function act(el) {
     var n = el.getAttribute('data-n'), list, i, x, p = el.getAttribute('data-p');
+    if (el.getAttribute('data-tp') !== null) { thStep(el); return; }
+    if (el.getAttribute('data-tm') !== null) {      /* thermostat: open / close the mode menu */
+      x = el.parentNode.querySelector('.thmn');
+      if (x) { x.style.display = x.style.display === 'none' ? 'block' : 'none'; }
+      return;
+    }
     if (p !== null) {
       /* lamp colours: m = open the hue bar, v = validate (close) */
       x = el.parentNode.parentNode.childNodes;
@@ -246,6 +290,11 @@
     list = el.getAttribute('data-o') !== null ? [el] : el.querySelectorAll('[data-o]');
     for (i = 0; i < list.length; i++) { swap(list[i]); }
     flash(el, 'prs', 300);
+    x = el.parentNode;      /* a button of the thermostat menu: the menu closes */
+    while (x && x.getAttribute) {
+      if ((' ' + (x.className || '') + ' ').indexOf(' thmn ') >= 0) { x.style.display = 'none'; break; }
+      x = x.parentNode;
+    }
     x = new XMLHttpRequest();
     x.onreadystatechange = function () {
       var r = null;
@@ -305,7 +354,12 @@
     if (a > 270) { a = a > 315 ? 0 : 270; }
     f = a / 270;
     p = el.getElementsByTagName('path');
-    if (p.length > 1) {
+    if (el.getAttribute('data-t') !== null) {     /* thermostat: the handle (last 2 paths) moves */
+      if (p.length > 1) {
+        p[p.length - 1].setAttribute('stroke-dashoffset', (-f * parseFloat(el.getAttribute('data-f'))).toFixed(1));
+        p[p.length - 2].setAttribute('stroke-dashoffset', (-f * parseFloat(el.getAttribute('data-f'))).toFixed(1));
+      }
+    } else if (p.length > 1) {
       p[1].setAttribute('stroke-dasharray', (f * parseFloat(el.getAttribute('data-f'))).toFixed(1) + ' 1000');
     }
     el.setAttribute('data-v', Math.round(f * 1000));

@@ -511,3 +511,30 @@ a.dl { color: #eee; text-decoration: none; font-size: 22px; padding: 16px; }
 .lgb .ic{color:inherit}
 .lgn{position:relative;margin-top:-40px;padding:16px;font-size:16.8px;line-height:27px}
 .lgv{min-height:27px}
+
+/* thermostat card: 264 px dial (px only: old WebKit computes % heights wrongly in padding-bottom boxes) */
+.card.thc{position:relative;overflow:visible;padding:0;text-align:center}
+.thti{padding:8px 56px;font-size:16px;line-height:32px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thw{position:relative;width:264px;height:264px;margin:0 auto}
+.thd{position:absolute;left:0;top:0;width:264px;height:264px}
+.thd svg{display:block;width:264px;height:264px;overflow:visible}
+.thd path{fill:none}
+.thl{position:absolute;left:57px;top:66px;width:150px;font-size:16px;font-weight:500;line-height:26px}
+.thv{position:absolute;left:42px;top:100px;width:180px;height:64px;font-size:57px;line-height:64px;white-space:nowrap}
+.thn{display:inline-block;vertical-align:top}
+.thx{display:inline-block;vertical-align:top;text-align:left;line-height:1}
+.thu{display:block;margin-top:5px;font-size:18.8px;line-height:23px}
+.thdc{display:block;font-size:24px;line-height:32px}
+.ths{position:absolute;left:57px;top:172px;width:150px;height:26px;font-size:16px;line-height:26px;white-space:nowrap}
+.ths .ic{display:inline-block;width:16px;height:16px;vertical-align:-3px;color:inherit}
+.thbs{position:absolute;left:0;top:206px;width:264px;font-size:0;text-align:center}
+.thb{display:inline-block;width:46px;height:46px;margin:0 12px;border:1px solid;border-radius:50%;vertical-align:top;cursor:pointer}
+.thb .ic{display:block;width:24px;height:24px;margin:11px}
+.thmb{position:absolute;right:0;top:0;width:48px;height:48px;cursor:pointer}
+.thmb .ic{display:block;width:24px;height:24px;margin:12px}
+.card.thmn{position:absolute;right:8px;top:44px;z-index:5;width:auto;min-width:150px;margin:0;padding:6px;overflow:visible;box-shadow:0 4px 14px rgba(0,0,0,.5);text-align:left}
+.cmb{padding:4px 0 12px;text-align:center;font-size:0;white-space:nowrap}
+.cmb .btn{display:inline-block;margin:4px 1%;padding:8px 0;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;-webkit-box-sizing:border-box;box-sizing:border-box;vertical-align:top}
+.cmb.cmv{padding:0;font-size:14px}
+.cmb .btn.cm .ic{width:22px;height:22px;margin:0 auto;color:inherit}
+.cmb.cmv .btn{display:block;width:auto;margin:4px 0;padding:10px 16px;text-align:left}
