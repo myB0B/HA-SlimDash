@@ -3,27 +3,26 @@
 All notable changes to SlimDash. The format follows [Keep a Changelog](https://keepachangelog.com/).
 The detailed development log (measurements, decisions) is in `docs/changelog.md` of the repository.
 
-## 0.8.75
+## 0.8.73 - 0.8.80
 
 ### Added
-- `thermostat` card like Home Assistant: dial with set point and current temperature, action, - / + buttons.
-  The dial can be dragged to set the temperature, and a menu (three dots, top right) changes the mode
-  (off, heat, cool, auto). Like in Home Assistant, the `features` of the card (`climate-hvac-modes`,
-  `climate-fan-modes`, `style: icons`) are shown as buttons at the bottom, and `show_current_as_primary`
-  swaps the set point and the current temperature.
-- `climate-hvac-modes` and `climate-fan-modes` features (thermostat and tile cards): change the HVAC mode
-  or the fan mode.
-
-### Fixed
-- Bubble card: `state_content` (e.g. last updated) is shown under the name.
-
-## 0.8.73
+- `thermostat` card like Home Assistant: dial with the set point and the current temperature (drag the
+  handle to set the temperature), action, - / + buttons, colours of the mode (heat, cool, auto).
+  A menu (three dots, top right) changes the mode: off, heat, cool, auto.
+- `features` of the thermostat and tile cards: `climate-hvac-modes` (`style: icons` available) and
+  `climate-fan-modes`; on the thermostat card they are shown as buttons at the bottom, like in Home Assistant.
+- Thermostat card option `show_current_as_primary`: swaps the set point and the current temperature.
 
 ### Fixed
 - Tile cards: `state_content` is handled, e.g. `last_changed` shows a relative time ("3 hours ago").
+- Bubble card: the card `state_content` (e.g. last updated) is shown under the name.
 - Temperatures of climate entities (tiles, thermostat) use the temperature unit of Home Assistant
-  (Fahrenheit was shown as Celsius); the thermostat buttons follow the step of the entity.
+  (Fahrenheit was shown as Celsius).
 - A dashboard added in the options can be saved without touching "Tabs at the bottom".
+- The climate action ("Heating", "Idle"...) and the fan modes use the language of Home Assistant.
+
+### Changed
+- Options: an empty `views` means `0` (first view), an empty `device` means `auto`.
 
 ## 0.8.71
 

@@ -211,7 +211,7 @@ Each card is recognised by its `type` in the dashboard YAML.
 
 | `type` | Notes |
 |---|---|
-| `tile` | Features: trend graph, cover buttons, light colours, brightness and temperature sliders. |
+| `tile` | Features: trend graph, cover buttons, light colours, brightness and temperature sliders, HVAC and fan modes. `state_content` (state, last changed, attribute). |
 | `button` | Name, state, tap action. |
 | `entity`, `sensor` | Value, with a graph if the card has one. |
 | `gauge` | Half-circle gauge, value in the arc. |
@@ -221,7 +221,7 @@ Each card is recognised by its `type` in the dashboard YAML.
 | `markdown` | Templates; `text_only` shows the text without a card. |
 | `heading` | Title and badges. |
 | `weather-forecast` | Current weather and forecast. |
-| `thermostat` | |
+| `thermostat` | Dial (drag the handle), - / + buttons, mode menu (three dots). `features` `climate-hvac-modes` (`style: icons`) and `climate-fan-modes` show buttons at the bottom; `show_current_as_primary` swaps the set point and the current temperature. |
 | `light` | Brightness dial. |
 | `history-graph`, `statistics-graph` | Curves and bars. |
 | `picture` | Image file, image uploaded in Home Assistant, or image entity. |
