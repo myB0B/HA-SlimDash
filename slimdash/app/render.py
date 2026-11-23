@@ -1583,14 +1583,68 @@ class Builder:
             attr, 100.0 - wv - gap, grad, h * 100.0 / 360.0, w, gap, cur)
         return '<div class="lfv"><span class="lfr">%s</span>%s</div>' % ("".join(out), pick)
 
-    def cover_buttons(self, eid):
-        """Monter / stop / descendre."""
+    def cover_feature(self, eid, f):
+        """Features of a cover: open/stop/close buttons, position slider, favourite positions."""
+        t = f.get("type")
+        sf = ((self.st(eid) or {}).get("a") or {}).get("supported_features")
+        can_pos = not isinstance(sf, int) or bool(sf & 4)       # SET_POSITION
+        if t == "cover-position" and can_pos:
+            return self.cover_slider(eid)
+        if t == "cover-position-favorite" and can_pos:
+            return self.cover_favorites(eid, f)
+        return '<div class="cvb">%s</div>' % self.cover_buttons(eid, full=True)
+
+    def cover_slider(self, eid):
+        """Position slider (like the brightness one): dragged by s.js, sent on release."""
+        attr = self.action_attrs({"kind": "cover", "entity": eid, "what": "pos"}).replace("data-a", "data-s")
+
+        def fn(e=eid):
+            p = self.pal()
+            pos = (self.st(e) or {}).get("a", {}).get("current_position")
+            try:
+                pct = max(0, min(100, int(round(float(pos)))))
+            except (TypeError, ValueError):
+                pct = 0
+            g = p["groups"].get(icons.COLOR_GROUP.get("cover", "def")) or p["groups"].get("def") or ("#03a9f4",)
+            col = g[0] if pct else p["inact"]
+            return ('<span class="lt" style="background:%s"></span><span class="lb" style="width:%d%%;'
+                    'background:%s"><i></i></span>' % (g[0], pct, col), None)
+        return '<div class="lsl" id="%s"%s>%s</div>' % (self.slot([eid], fn), attr, fn()[0])
+
+    def cover_favorites(self, eid, f):
+        """Favourite positions (set in the entity settings of Home Assistant), else 0/25/50/75/100."""
+        favs = (self.store.reg.get(eid) or {}).get("cfav")
+        want = f.get("positions")
+        vals = []
+        for v in (want if isinstance(want, list) else favs) or [0, 25, 50, 75, 100]:
+            try:
+                vals.append(max(0, min(100, int(v))))
+            except (TypeError, ValueError):
+                pass
+        vals = sorted(set(vals))[:6] or [0, 25, 50, 75, 100]
+        w = 100.0 / len(vals) - 2
+        acts = [(v, self.action_attrs({"kind": "service", "domain": "cover", "service": "set_cover_position",
+                                       "data": {"position": v}, "target": {"entity_id": eid}})) for v in vals]
+
+        def row(e=eid):
+            cur = (self.st(e) or {}).get("a", {}).get("current_position")
+            return ("".join('<span class="btn cm%s"%s style="width:%.1f%%">%d%%</span>' % (
+                " on" if cur == v else "", at, w, v) for v, at in acts), None)
+        return '<div class="cmb" id="%s">%s</div>' % (self.slot([eid], row), row()[0])
+
+    def cover_buttons(self, eid, full=False):
+        """Monter / stop / descendre (full: the buttons share the whole width)."""
         out = []
+        sf = ((self.st(eid) or {}).get("a") or {}).get("supported_features")
         for srv, ic in (("open_cover", "up"), ("stop_cover", "stop"), ("close_cover", "down")):
-            out.append('<span class="btn cv"%s>%s</span>' % (self.action_attrs(
+            if srv == "stop_cover" and isinstance(sf, int) and not sf & 8:
+                continue        # no stop on this cover
+            out.append(self.action_attrs(
                 {"kind": "service", "domain": "cover", "service": srv, "data": {},
-                 "target": {"entity_id": eid}}), self.icon(ic)))
-        return "".join(out)
+                 "target": {"entity_id": eid}}) + "|" + ic)
+        w = ' style="width:%.1f%%"' % (100.0 / len(out) - 2) if full else ""
+        return "".join('<span class="btn cv"%s%s>%s</span>' % (o.rsplit("|", 1)[0], w, self.icon(o.rsplit("|", 1)[1]))
+                       for o in out)
 
     def climate_ctrl(self, eid):
         def tgt(e=eid):
@@ -1680,8 +1734,9 @@ class Builder:
                 if m:
                     extra += m
                     nfeat += 1
-            elif f.get("type") in ("cover-open-close", "cover-position") and domain_of(eid) == "cover":
-                extra += '<div class="cvb">%s</div>' % self.cover_buttons(eid)
+            elif f.get("type") in ("cover-open-close", "cover-position", "cover-position-favorite") \
+                    and domain_of(eid) == "cover":
+                extra += self.cover_feature(eid, f)
                 nfeat += 1
         vertical = bool(c.get("vertical")) or c.get("layout") == "vertical"
         mini = (2 if vertical else 1) + nfeat

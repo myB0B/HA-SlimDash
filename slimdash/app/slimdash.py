@@ -28,7 +28,7 @@ import icons
 import render
 import theme
 
-VERSION = "0.8.80"
+VERSION = "0.8.82"
 HERE = os.path.dirname(os.path.abspath(__file__))
 log = logging.getLogger("slimdash")
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
@@ -1022,6 +1022,9 @@ class HAClient:
             fav = ((ent.get("options") or {}).get("light") or {}).get("favorite_colors")
             if isinstance(fav, list):
                 info["fav"] = fav
+            cfav = ((ent.get("options") or {}).get("cover") or {}).get("favorite_positions")
+            if isinstance(cfav, list):
+                info["cfav"] = cfav
             if need_names:
                 dev = devices.get(ent.get("device_id")) or {}
                 info["dn"] = dev.get("name_by_user") or dev.get("name") or ""
@@ -1092,6 +1095,10 @@ class HAClient:
 
     async def run_action(self, a, value=None):
         kind = a.get("kind")
+        if kind == "cover":     # cover position slider; value = position 0..1000
+            f = max(0.0, min(1.0, float(value) / 1000.0))
+            return await self.call_service("cover", "set_cover_position",
+                                           {"position": int(round(f * 100))}, {"entity_id": a["entity"]})
         if kind == "tset":      # thermostat dial; value = position 0..1000 between min and max
             eid = a["entity"]
             at = (self.hub.states.get(eid) or {}).get("a") or {}

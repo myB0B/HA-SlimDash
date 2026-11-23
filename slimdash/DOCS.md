@@ -211,7 +211,7 @@ Each card is recognised by its `type` in the dashboard YAML.
 
 | `type` | Notes |
 |---|---|
-| `tile` | Features: trend graph, cover buttons, light colours, brightness and temperature sliders, HVAC and fan modes. `state_content` (state, last changed, attribute). |
+| `tile` | Features: trend graph, cover buttons, position slider and favourite positions, light colours, brightness and temperature sliders, HVAC and fan modes. `state_content` (state, last changed, attribute). |
 | `button` | Name, state, tap action. |
 | `entity`, `sensor` | Value, with a graph if the card has one. |
 | `gauge` | Half-circle gauge, value in the arc. |

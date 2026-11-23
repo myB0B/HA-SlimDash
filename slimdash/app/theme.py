@@ -305,7 +305,8 @@ def light_fix(p):
     if not card or lum(card) < 0.5:
         return ""
     out = [".tile.rt,.tile.rt.on{background:%(card)s}.tab{color:%(sec)s}.tab.cur{color:%(text)s}"
-           ".btn,.btn.cv{color:%(text)s}" % p]
+           ".btn,.btn.cv{color:%(text)s}"
+           ".tile .btn.cv,.tile .btn.cm:not(.on){background:rgba(158,158,158,.2)}" % p]      # grey like HA
     for n, c in sorted(MC.items()):
         if n in ("primary", "accent"):
             continue

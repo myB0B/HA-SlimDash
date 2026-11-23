@@ -345,3 +345,10 @@ indicator only), theme background image (cost on old devices).
   point in the small line (target icon, from memory of the HA card, not measured); the - / + buttons update
   that small line locally (`data-sw` on `.thm`, `.thtv`).
 - 0.8.80: thermostat card title centred like HA (measured: centred over the whole card, 16 px).
+- 0.8.81: cover tile features (issue #7): `cover-position` = position slider (like the brightness one, action
+  `cover` -> `cover.set_cover_position`), `cover-position-favorite` = buttons of favourite positions (HA entity
+  option `favorite_positions`, `cfav` in the registry, else 0/25/50/75/100; `positions` in the feature overrides),
+  `cover-open-close` hides stop when not supported; covers without SET_POSITION fall back to the buttons.
+- 0.8.82: cover tile features layout: the position buttons and the open/stop/close buttons share the whole width
+  (flex tile: `width:100%`), equal 12 px gaps between the feature rows (cvb 42 px, buttons `vertical-align:top`),
+  light theme: grey translucent buttons (`light_fix`).

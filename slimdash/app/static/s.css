@@ -535,6 +535,9 @@ a.dl { color: #eee; text-decoration: none; font-size: 22px; padding: 16px; }
 .card.thmn{position:absolute;right:8px;top:44px;z-index:5;width:auto;min-width:150px;margin:0;padding:6px;overflow:visible;box-shadow:0 4px 14px rgba(0,0,0,.5);text-align:left}
 .cmb{padding:4px 0 12px;text-align:center;font-size:0;white-space:nowrap}
 .cmb .btn{display:inline-block;margin:4px 1%;padding:8px 0;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;-webkit-box-sizing:border-box;box-sizing:border-box;vertical-align:top}
+.tile .cmb{clear:both;width:100%;margin-top:12px;padding:0}
+.tile .cmb .btn.cm{margin:0 1%;padding:13px 0;font-size:13px;line-height:16px}
+.tile .cvb .btn{vertical-align:top}
 .cmb.cmv{padding:0;font-size:14px}
 .cmb .btn.cm .ic{width:22px;height:22px;margin:0 auto;color:inherit}
 .cmb.cmv .btn{display:block;width:auto;margin:4px 0;padding:10px 16px;text-align:left}
