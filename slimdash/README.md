@@ -47,7 +47,8 @@ updated live, that keeps the layout of your original dashboard.
 - **Live updates**: one WebSocket connection to Home Assistant, subscribed only to the
   entities on screen; the device receives a few bytes per change.
 - **Actions**: toggle lights and switches, press buttons, run scripts and scenes, set
-  light brightness, color and temperature, move covers, change values, switch views.
+  light brightness, color and temperature, move covers (position slider, favourite positions),
+  set the thermostat (dial, modes, fan), change values, switch views.
 - **Three rendering types**, chosen automatically from the browser: type 1 for the oldest
   devices (Android 4.4, iOS 7–9), type 2 for 2016–2019 browsers, type 3 for recent ones.
 - **Cameras**: snapshots refreshed every second, faster with Frigate, live video on recent
