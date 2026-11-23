@@ -3,7 +3,7 @@
 All notable changes to SlimDash. The format follows [Keep a Changelog](https://keepachangelog.com/).
 The detailed development log (measurements, decisions) is in `docs/changelog.md` of the repository.
 
-## 0.8.73 - 0.8.82
+## 0.8.73 - 0.8.86
 
 ### Added
 - `thermostat` card like Home Assistant: dial with the set point and the current temperature (drag the
@@ -16,6 +16,12 @@ The detailed development log (measurements, decisions) is in `docs/changelog.md`
   positions buttons); the stop button is hidden when the cover cannot stop.
 
 ### Fixed
+- Light theme: a curve colour that is too light (e.g. white), including the colour thresholds, is darkened so
+  the graph stays visible.
+- Type 0 (e-reader image): in the statistics graph cards, the values are aligned (humidity on the baseline of the
+  temperature, pressure above it).
+- A request to run an action without a valid action number (missing or negative) no longer runs the last action;
+  it is rejected.
 - Tile cards: `state_content` is handled, e.g. `last_changed` shows a relative time ("3 hours ago").
 - Bubble card: the card `state_content` (e.g. last updated) is shown under the name.
 - Temperatures of climate entities (tiles, thermostat) use the temperature unit of Home Assistant

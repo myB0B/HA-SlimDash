@@ -352,3 +352,11 @@ indicator only), theme background image (cost on old devices).
 - 0.8.82: cover tile features layout: the position buttons and the open/stop/close buttons share the whole width
   (flex tile: `width:100%`), equal 12 px gaps between the feature rows (cvb 42 px, buttons `vertical-align:top`),
   light theme: grey translucent buttons (`light_fix`).
+- 0.8.83: issue #8: `POST /<dash>/a` without the field `a` (or with a negative index) ran the last action (Python negative
+  index); now rejected with 400. Internal error message "unknown action" in English.
+- 0.8.84: type 0 (Kindle) statistics graph card: humidity on the baseline of the main value, pressure above it on the
+  baseline of the title (values drawn from their baseline, `font.getmetrics()`).
+- 0.8.85: light theme: curve colours chosen in the cards (e.g. white) darkened to stay readable (`series_color` and
+  statistics graph card use `readable`).
+- 0.8.86: light theme: `color_thresholds` colours (gradient of the curve, legend dot) darkened with `readable` too
+  (in `chart`, before `spark_svg`, which is a module function without access to the palette).

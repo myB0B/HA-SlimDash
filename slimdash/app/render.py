@@ -744,7 +744,7 @@ class Builder:
     def series_color(self, eid, color, i, fallback=None):
         """Colour of a curve: that of the card, otherwise that of the type, otherwise the palette."""
         if color and HEX.match(str(color)):
-            return color
+            return self.readable(color)         # light theme: a white curve would be invisible
         return self.kind_color(eid) or fallback or SERIES_COLORS[i % len(SERIES_COLORS)]
 
     def prec(self, eid):
@@ -963,6 +963,8 @@ class Builder:
         for i, ent in enumerate(entities):
             eid, color = ent[0], ent[1]
             stops = tuple(ent[2]) if len(ent) > 2 and ent[2] else None
+            if stops:       # light theme: too light threshold colours (white...) are darkened
+                stops = tuple((v, hex_rgb(self.readable("#%02x%02x%02x" % rgb))) for v, rgb in stops)
             sfill = ent[3] if len(ent) > 3 else None
             if stops:
                 color = "#%02x%02x%02x" % stops[0][1]
@@ -2418,10 +2420,10 @@ class Builder:
         series, colors, barmap = [], [], []
         barmap = {}
         for i, e in enumerate(ents):
-            color = e.get("color") if hex_rgb(e.get("color")) else self.series_color(e["entity"], None, i)
+            color = self.readable(e.get("color")) if hex_rgb(e.get("color")) else self.series_color(e["entity"], None, i)
             stops = self.thresholds(e)
             if stops:
-                color = "#%02x%02x%02x" % stops[0][1]
+                color = self.readable("#%02x%02x%02x" % stops[0][1])
             colors.append(color)
             if e.get("show_graph") is False:        # value alone, no curve (like HA)
                 continue

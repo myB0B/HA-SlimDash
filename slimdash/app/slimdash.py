@@ -28,7 +28,7 @@ import icons
 import render
 import theme
 
-VERSION = "0.8.82"
+VERSION = "0.8.86"
 HERE = os.path.dirname(os.path.abspath(__file__))
 log = logging.getLogger("slimdash")
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
@@ -1155,7 +1155,7 @@ class HAClient:
                                            {"temperature": float(cur) + float(a["step"])},
                                            {"entity_id": eid})
         if kind != "toggle":
-            raise RuntimeError("action inconnue")
+            raise RuntimeError("unknown action")
         target = {"entity_id": eid}
         if dom == "lock":
             return await self.call_service("lock", "unlock" if s == "locked" else "lock",
@@ -1431,10 +1431,12 @@ async def h_action(req):
         return web.json_response({"r": 1})
     form = await req.post()
     try:
-        idx = int(form.get("a", "-1"))
+        idx = int(form.get("a", ""))
+        if idx < 0:     # a negative index would pick an action from the end of the list
+            raise IndexError(idx)
         a = var.actions[idx]
     except (ValueError, IndexError):
-        return web.json_response({"ok": 0, "e": "action inconnue"}, status=400)
+        return web.json_response({"ok": 0, "e": "unknown action"}, status=400)
     # Same action from the same device in less than 1 s: duplicate (touch + ghost click).
     last = _last_actions
     sig = (req.remote, dash.name, var.cls, idx, form.get("v"))

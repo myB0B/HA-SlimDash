@@ -867,9 +867,15 @@ class Scene:
         shown = [e for e in ents if e.get("show_state") is not False]
         size = ssize(shown[0]) if shown else 0
         rest = shown[1:]
-        rs = 22                                   # following values, stacked on the right
+        rs = 22                                   # following values, on the right
         head = (30 if title else 0)
-        vals_h = (max(size, (rs + 4) * len(rest)) + 8) if shown else 0
+
+        def asc(px):
+            return font(px, 500).getmetrics()[0] / SS
+        # The last value (humidity) shares the baseline of the main value; the one above (pressure) sits on
+        # the baseline of the title, or one line higher when there is no title.
+        up = 0 if (title or len(rest) < 2) else max(0, (len(rest) - 1) * (rs + 4) - (asc(size) - asc(rs)))
+        vals_h = (max(size, (rs + 4) * len(rest)) + 8 + up) if shown else 0
         if h is None:
             return 12 + head + vals_h + 64 + 4
         self.frame(x, y, w, h)
@@ -878,11 +884,18 @@ class Scene:
             self.T(x + 14, cy, title, 18, 500, fill=INK2, maxw=w - 28)
             cy += head
         if shown:
+            cy += up
+            base = cy + asc(size)               # baseline of the main value
+            tbase = (y + 10 + asc(18)) if title else None
             rw = 0
-            ry = cy
-            for e in rest:      # humidity, pressure... on the right, one under the other
-                rw = max(rw, self.big_value(x + w - 14, ry, e, rs, (w - 28) * 0.45, anchor="ra"))
-                ry += rs + 4
+            for i, e in enumerate(rest):      # humidity on the main baseline, pressure above
+                if i == 0:
+                    bl = base
+                elif i == 1 and tbase is not None:
+                    bl = tbase
+                else:
+                    bl = base - i * (rs + 4)
+                rw = max(rw, self.big_value(x + w - 14, bl - asc(rs), e, rs, (w - 28) * 0.45, anchor="ra"))
             self.big_value(x + 14, cy, shown[0], size, w - 28 - (rw + 10 if rest else 0))
             cy += max(size, (rs + 4) * len(rest)) + 8
         widths = [(2.5, INK), (2, LINE), (1.5, INK), (1.5, GREY)]
