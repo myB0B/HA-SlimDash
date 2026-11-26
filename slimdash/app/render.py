@@ -1585,18 +1585,28 @@ class Builder:
             attr, 100.0 - wv - gap, grad, h * 100.0 / 360.0, w, gap, cur)
         return '<div class="lfv"><span class="lfr">%s</span>%s</div>' % ("".join(out), pick)
 
-    def cover_feature(self, eid, f):
+    def tile_color(self, color):
+        """Hex colour of the `color` option of a tile (mushroom name or #hex), readable on the card; or None."""
+        c = str(color or "").strip().lower()
+        hx = theme.MC.get(c) if c in MUSHROOM_COLORS else (c if HEX.match(c) else None)
+        if c == "primary":
+            hx = self.pal().get("prim")
+        elif c == "accent":
+            hx = self.pal().get("acc")
+        return self.readable(hx) if hx and hex_rgb(hx) else None
+
+    def cover_feature(self, eid, f, color=None):
         """Features of a cover: open/stop/close buttons, position slider, favourite positions."""
         t = f.get("type")
         sf = ((self.st(eid) or {}).get("a") or {}).get("supported_features")
         can_pos = not isinstance(sf, int) or bool(sf & 4)       # SET_POSITION
         if t == "cover-position" and can_pos:
-            return self.cover_slider(eid)
+            return self.cover_slider(eid, color)
         if t == "cover-position-favorite" and can_pos:
-            return self.cover_favorites(eid, f)
+            return self.cover_favorites(eid, f, color)
         return '<div class="cvb">%s</div>' % self.cover_buttons(eid, full=True)
 
-    def cover_slider(self, eid):
+    def cover_slider(self, eid, color=None):
         """Position slider (like the brightness one): dragged by s.js, sent on release."""
         attr = self.action_attrs({"kind": "cover", "entity": eid, "what": "pos"}).replace("data-a", "data-s")
 
@@ -1608,12 +1618,13 @@ class Builder:
             except (TypeError, ValueError):
                 pct = 0
             g = p["groups"].get(icons.COLOR_GROUP.get("cover", "def")) or p["groups"].get("def") or ("#03a9f4",)
-            col = g[0] if pct else p["inact"]
+            base = color or g[0]            # colour option of the tile, else colour of the cover icon
+            col = base if pct else p["inact"]
             return ('<span class="lt" style="background:%s"></span><span class="lb" style="width:%d%%;'
-                    'background:%s"><i></i></span>' % (g[0], pct, col), None)
+                    'background:%s"><i></i></span>' % (base, pct, col), None)
         return '<div class="lsl" id="%s"%s>%s</div>' % (self.slot([eid], fn), attr, fn()[0])
 
-    def cover_favorites(self, eid, f):
+    def cover_favorites(self, eid, f, color=None):
         """Favourite positions (set in the entity settings of Home Assistant), else 0/25/50/75/100."""
         favs = (self.store.reg.get(eid) or {}).get("cfav")
         want = f.get("positions")
@@ -1628,10 +1639,15 @@ class Builder:
         acts = [(v, self.action_attrs({"kind": "service", "domain": "cover", "service": "set_cover_position",
                                        "data": {"position": v}, "target": {"entity_id": eid}})) for v in vals]
 
+        p = self.pal()
+        g = p["groups"].get(icons.COLOR_GROUP.get("cover", "def")) or p["groups"].get("def") or ("#03a9f4",)
+        base = color or g[0]                # active button: colour of the tile, else colour of the cover icon
+
         def row(e=eid):
             cur = (self.st(e) or {}).get("a", {}).get("current_position")
-            return ("".join('<span class="btn cm%s"%s style="width:%.1f%%">%d%%</span>' % (
-                " on" if cur == v else "", at, w, v) for v, at in acts), None)
+            return ("".join('<span class="btn cm%s"%s style="width:%.1f%%%s">%d%%</span>' % (
+                " on" if cur == v else "", at, w, (";background:%s;color:#fff" % base) if cur == v else "", v)
+                for v, at in acts), None)
         return '<div class="cmb" id="%s">%s</div>' % (self.slot([eid], row), row()[0])
 
     def cover_buttons(self, eid, full=False):
@@ -1738,7 +1754,7 @@ class Builder:
                     nfeat += 1
             elif f.get("type") in ("cover-open-close", "cover-position", "cover-position-favorite") \
                     and domain_of(eid) == "cover":
-                extra += self.cover_feature(eid, f)
+                extra += self.cover_feature(eid, f, self.tile_color(c.get("color")))
                 nfeat += 1
         vertical = bool(c.get("vertical")) or c.get("layout") == "vertical"
         mini = (2 if vertical else 1) + nfeat

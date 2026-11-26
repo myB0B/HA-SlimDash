@@ -3,7 +3,7 @@
 All notable changes to SlimDash. The format follows [Keep a Changelog](https://keepachangelog.com/).
 The detailed development log (measurements, decisions) is in `docs/changelog.md` of the repository.
 
-## 0.8.73 - 0.8.86
+## 0.8.73 - 0.8.87
 
 ### Added
 - `thermostat` card like Home Assistant: dial with the set point and the current temperature (drag the
@@ -13,7 +13,7 @@ The detailed development log (measurements, decisions) is in `docs/changelog.md`
   `climate-fan-modes`; on the thermostat card they are shown as buttons at the bottom, like in Home Assistant.
 - Thermostat card option `show_current_as_primary`: swaps the set point and the current temperature.
 - Cover features of the tile card: `cover-position` (position slider), `cover-position-favorite` (favourite
-  positions buttons); the stop button is hidden when the cover cannot stop.
+  positions buttons), in the colour of the tile; the stop button is hidden when the cover cannot stop.
 
 ### Fixed
 - Light theme: a curve colour that is too light (e.g. white), including the colour thresholds, is darkened so

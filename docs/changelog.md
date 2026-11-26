@@ -360,3 +360,5 @@ indicator only), theme background image (cost on old devices).
   statistics graph card use `readable`).
 - 0.8.86: light theme: `color_thresholds` colours (gradient of the curve, legend dot) darkened with `readable` too
   (in `chart`, before `spark_svg`, which is a module function without access to the palette).
+- 0.8.87: cover tile features follow the `color` option of the tile (position slider, active favourite position;
+  `tile_color`: mushroom name, #hex, primary, accent; readable in light theme), else the colour of the cover icon.
