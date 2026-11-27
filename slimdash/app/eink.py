@@ -782,20 +782,30 @@ class Scene:
     k_custom_meteofrance_weather_card = k_weather_forecast
 
     def chart(self, series, x, y, w, h, frame_bottom=True):
-        """series = [(values, thickness, grey)] -> curves in the rectangle."""
+        """series = [(values, thickness, grey[, group])] -> curves in the rectangle.
+        Curves of the same group (same unit) share their scale."""
         if not self.pen or h < 8:
             return
-        if not any(v is not None for vals, _, _ in series for v in vals):
+        if not any(v is not None for s in series for v in s[0]):
             self.T(x + w / 2.0, y + h / 2.0, "no data", 13, 400, fill=GREY, anchor="mm")
             return
         lines = []
-        for vals, width, grey in series:
+        ranges = {}
+        for s in series:
+            g = s[3] if len(s) > 3 else None
+            known = [v for v in s[0] if v is not None]
+            if g is not None and known:
+                lo, hi = ranges.get(g, (known[0], known[0]))
+                ranges[g] = (min(lo, min(known)), max(hi, max(known)))
+        for s in series:
+            vals, width, grey = s[:3]
+            group = s[3] if len(s) > 3 else None
             n = len(vals)
             known = [v for v in vals if v is not None]
             if n < 2 or not known:
                 continue
-            # Scale specific to each curve (different units), like the mini graphs.
-            lo, hi = min(known), max(known)
+            # Scale shared by the curves of the same unit, else specific to the curve.
+            lo, hi = ranges[group] if group in ranges else (min(known), max(known))
             if hi - lo < 1e-9:
                 lo, hi = lo - 1, hi + 1
             span = hi - lo
@@ -816,6 +826,13 @@ class Scene:
             self.pen.line(seg, grey, width)
         if frame_bottom:
             self.pen.line([(x, y + h), (x + w, y + h)], GREY, 1)
+
+    def scale_group(self, e):
+        """Same unit -> same scale; "y_axis: independent" stays alone."""
+        if e.get("y_axis") == "independent":
+            return None
+        a = (self.st(e["entity"]) or {}).get("a") or {}
+        return (str(e.get("y_axis") or ""), a.get("unit_of_measurement") or "")
 
     def order_ents(self, ents):
         """Several values: temperature first, then humidity, then pressure, then the rest."""
@@ -899,7 +916,8 @@ class Scene:
             self.big_value(x + 14, cy, shown[0], size, w - 28 - (rw + 10 if rest else 0))
             cy += max(size, (rs + 4) * len(rest)) + 8
         widths = [(2.5, INK), (2, LINE), (1.5, INK), (1.5, GREY)]
-        series = [(self.hist(e["entity"], hours), widths[i][0], widths[i][1]) for i, e in enumerate(ents)]
+        series = [(self.hist(e["entity"], hours), widths[i][0], widths[i][1], self.scale_group(e))
+                  for i, e in enumerate(ents)]
         self.chart(series, x + 6, cy + 2, w - 12, y + h - cy - 12)
         return h
 
@@ -916,7 +934,8 @@ class Scene:
             cy += 30
         leg = 24 * len(ents)
         widths = [(2.5, INK), (2, LINE), (1.5, INK), (1.5, GREY)]
-        self.chart([(self.hist(e["entity"], hours), widths[i][0], widths[i][1]) for i, e in enumerate(ents)],
+        self.chart([(self.hist(e["entity"], hours), widths[i][0], widths[i][1], self.scale_group(e))
+                    for i, e in enumerate(ents)],
                    x + 10, cy + 2, w - 20, y + h - cy - leg - 16)
         ly = y + h - leg - 8
         for i, e in enumerate(ents):

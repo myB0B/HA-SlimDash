@@ -1,4 +1,4 @@
-# HA-SlimDash 0.8.87
+# HA-SlimDash 0.8.91
 
 ![SlimDash](docs/banner.jpg)
 

@@ -3,7 +3,7 @@
 All notable changes to SlimDash. The format follows [Keep a Changelog](https://keepachangelog.com/).
 The detailed development log (measurements, decisions) is in `docs/changelog.md` of the repository.
 
-## 0.8.73 - 0.8.87
+## 0.8.73 - 0.8.91
 
 ### Added
 - `thermostat` card like Home Assistant: dial with the set point and the current temperature (drag the
@@ -12,10 +12,17 @@ The detailed development log (measurements, decisions) is in `docs/changelog.md`
 - `features` of the thermostat and tile cards: `climate-hvac-modes` (`style: icons` available) and
   `climate-fan-modes`; on the thermostat card they are shown as buttons at the bottom, like in Home Assistant.
 - Thermostat card option `show_current_as_primary`: swaps the set point and the current temperature.
+- History and statistics graphs show their scale (graduations, unit, times or dates), with a second scale on the
+  right for a second unit; `min_y_axis` and `max_y_axis` are used.
 - Cover features of the tile card: `cover-position` (position slider), `cover-position-favorite` (favourite
   positions buttons), in the colour of the tile; the stop button is hidden when the cover cannot stop.
 
 ### Fixed
+- History and statistics graphs: colour names set in the card (e.g. `purple`) are used.
+- Graphs: curves of the same unit now share one scale.
+- Graphs: curve colours like Home Assistant (accent colour of the theme for the sensor card and tiles, palette for
+  history and statistics graphs) instead of a colour by type of measurement, so two temperatures no longer look the
+  same. The colours set in the cards are kept; the statistics-graph-chart-card keeps its colours by type.
 - Light theme: a curve colour that is too light (e.g. white), including the colour thresholds, is darkened so
   the graph stays visible.
 - Type 0 (e-reader image): in the statistics graph cards, the values are aligned (humidity on the baseline of the

@@ -8,7 +8,7 @@ import hashlib
 import html
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import colorsys
 import i18n
@@ -535,13 +535,110 @@ def fmt_num(v):
     return s.replace(".", i18n.D["dec"])
 
 
-def spark_svg(series, h, labels=None, fill=True, pre="", gid="g"):
-    """SVG curve(s); each series has its own scale (like "y_axis: independent").
-    Series = (values, colour[, thresholds]); thresholds = [(value, (r, g, b))] sorted: the curve
+def nice_ticks(lo, hi, n=5):
+    """Round graduations (steps 1, 2, 2.5, 5 x 10^k) covering lo..hi: (list of values, decimals)."""
+    if hi - lo < 1e-9:
+        lo, hi = lo - 1, hi + 1
+    raw = (hi - lo) / float(n)
+    mag = 10.0 ** math.floor(math.log10(raw))
+    step = next(m * mag for m in (1, 2, 2.5, 5, 10) if raw <= m * mag * 1.0001)
+    first, last = math.floor(lo / step + 1e-6), math.ceil(hi / step - 1e-6)
+    dec = max(0, -int(math.floor(math.log10(step) + 1e-9)))
+    if abs(round(step, dec) - step) > step * 1e-6:
+        dec += 1            # step of 2.5
+    return [i * step for i in range(int(first), int(last) + 1)], dec
+
+
+def time_ticks(now, hours):
+    """Round times of the window ending now: [(position 0..1, label)]. Up to 36 h: full hours
+    (every 1 to 12 h), else dates at midnight. Those too close to an edge are left out."""
+    start = now - timedelta(hours=hours)
+    if hours <= 36:
+        step = next((s for s in (1, 2, 3, 4, 6, 12) if hours / float(s) <= 5), 12)
+        t = start.replace(minute=0, second=0, microsecond=0)
+        t = t.replace(hour=t.hour - t.hour % step)
+        delta = timedelta(hours=step)
+    else:
+        step = max(1, int(math.ceil(hours / 24.0 / 5)))
+        t = start.replace(hour=0, minute=0, second=0, microsecond=0)
+        delta = timedelta(days=step)
+    out = []
+    while t <= now:
+        frac = (t - start).total_seconds() / (hours * 3600.0)
+        if 0.05 <= frac <= 0.95:
+            out.append((frac, t.strftime("%H:%M") if hours <= 36
+                        else "%d %s" % (t.day, i18n.D["months3"][t.month - 1])))
+        t += delta
+    return out
+
+
+def axis_graph(series, h, hours, ymin, ymax, color, gid, fill):
+    """Curves with a visible scale like Home Assistant: graduations and unit on the left (on the right
+    for a second unit), horizontal grid lines, times under the curves."""
+    groups = []                                     # scales in the order of the curves
+    for s in series:
+        if s[4] not in groups:
+            groups.append(s[4])
+    scales = {}
+    for gi, g in enumerate(groups):
+        pts = [v for s in series if s[4] == g for v in s[0] if v is not None]
+        if len(pts) < 2:
+            continue
+        lo, hi = min(pts), max(pts)
+        if gi == 0:                                 # min_y_axis / max_y_axis of the card
+            lo = ymin if ymin is not None else lo
+            hi = ymax if ymax is not None else hi
+        ticks, dec = nice_ticks(lo, max(hi, lo), 5 if h >= 110 else 3)
+        scales[g] = (ticks, dec)
+    if not scales:
+        return spark_svg(series, h, None, fill=fill, gid=gid)
+
+    def ypx(i, count):                              # same formula as spark_svg
+        return (h - 3) - (i / float(max(1, count - 1))) * (h - 6)
+
+    labels, grid, sides = [], [], [g for g in groups if g in scales][:2]
+    for side, g in enumerate(sides):
+        ticks, dec = scales[g]
+        edge = "left" if side == 0 else "right"
+        al = "right" if side == 0 else "left"
+        for i, v in enumerate(ticks):
+            y = ypx(i, len(ticks))
+            txt = group(("%.*f" % (dec, v + 0.0)))
+            labels.append('<span style="position:absolute;%s:0;top:%dpx;width:30px;text-align:%s">%s</span>'
+                          % (edge, 14 + y - 7, al, E(txt)))
+            if side == 0:
+                grid.append('<line x1="0" x2="300" y1="%.1f" y2="%.1f" style="stroke:%s;stroke-opacity:.18;'
+                            'stroke-width:1"/>' % (y, y, color))
+        if g[1]:
+            labels.append('<span style="position:absolute;%s:0;top:0;white-space:nowrap">%s</span>'
+                          % (edge, E(g[1])))
+    ranges = dict((g, (t[0], t[-1])) for g, (t, _) in scales.items())
+    svg = spark_svg(series, h, None, fill=fill, pre="".join(grid), gid=gid, fixed=ranges)
+    times = ['<span style="position:absolute;left:%.1f%%;top:%dpx;width:60px;margin-left:-30px;'
+             'text-align:center;white-space:nowrap">%s</span>' % (frac * 100, h + 2, E(txt))
+             for frac, txt in time_ticks(datetime.now(), hours)]
+    right = 34 if len(sides) > 1 else 0
+    return ('<div style="position:relative;padding:14px %dpx 16px 34px;font-size:11px;line-height:14px;'
+            'color:%s">%s<div style="position:relative">%s%s</div></div>'
+            % (right, color, "".join(labels), svg, "".join(times)))
+
+
+def spark_svg(series, h, labels=None, fill=True, pre="", gid="g", fixed=None):
+    """SVG curve(s). Series of the same scale group (same unit) share one scale, like Home Assistant;
+    the others have their own.
+    Series = (values, colour[, thresholds, fill, group]); thresholds = [(value, (r, g, b))] sorted: the curve
     gets a vertical gradient (colour depending on the height), like color_thresholds.
     pre = drawing placed behind the curves (bars)."""
     W = 300.0
     parts = [pre] if pre else []
+    ranges = {}             # scale group -> (lowest, highest) of all its curves
+    for ser in series:
+        g = ser[4] if len(ser) > 4 else None
+        pts = [v for v in ser[0] if v is not None]
+        if g is not None and len(pts) > 1:
+            lo, hi = ranges.get(g, (pts[0], pts[0]))
+            ranges[g] = (min(lo, min(pts)), max(hi, max(pts)))
+    ranges.update(fixed or {})          # graduated scale
     for si, ser in enumerate(series):
         vals, color = ser[0], ser[1]
         stops = ser[2] if len(ser) > 2 else None
@@ -549,7 +646,8 @@ def spark_svg(series, h, labels=None, fill=True, pre="", gid="g"):
         pts = [v for v in vals if v is not None]
         if len(pts) < 2:
             continue
-        lo, hi = min(pts), max(pts)
+        group = ser[4] if len(ser) > 4 else None
+        lo, hi = ranges[group] if group in ranges else (min(pts), max(pts))
         rng = (hi - lo) or 1.0
         if stops:
             # offset 0 = bottom of the curve (lo), 1 = top (hi)
@@ -743,9 +841,33 @@ class Builder:
 
     def series_color(self, eid, color, i, fallback=None):
         """Colour of a curve: that of the card, otherwise that of the type, otherwise the palette."""
+        if color and (color in SERIES_COLORS or color == self.accent()):
+            return color                        # colours of Home Assistant: as they are
         if color and HEX.match(str(color)):
             return self.readable(color)         # light theme: a white curve would be invisible
         return self.kind_color(eid) or fallback or SERIES_COLORS[i % len(SERIES_COLORS)]
+
+    def accent(self):
+        """Accent colour of the theme: curve of the sensor cards and tiles in Home Assistant."""
+        return self.pal().get("acc") or "#ff9800"
+
+    def auto_colors(self, items):
+        """items = [(entity_id, colour of the card or None)] of one graph. When two curves are of the
+        same type (two temperatures...), the curves without a colour of their own take
+        the Home Assistant palette; else None (usual colour)."""
+        auto = [not (color and HEX.match(str(color))) for _, color in items]
+        kinds = [self.kind_color(eid) for eid, _ in items]
+        kinds = [k for k in kinds if k]
+        if len(kinds) == len(set(kinds)):
+            return [None] * len(items)
+        return [self.readable(SERIES_COLORS[i % len(SERIES_COLORS)]) if a else None
+                for i, a in enumerate(auto)]
+
+    def scale_group(self, eid, axis=None):
+        """Curves of the same group share their scale: same unit; "y_axis: independent" stays alone."""
+        if axis == "independent":
+            return None
+        return (str(axis or ""), ((self.st(eid) or {}).get("a") or {}).get("unit_of_measurement") or "")
 
     def prec(self, eid):
         """Display precision set in HA (entity registry)."""
@@ -951,7 +1073,7 @@ class Builder:
         self.need_hist[key] = (eid, hours)
         return key
 
-    def chart(self, entities, hours, height=None, bars=0, cls="chart", barmap=None):
+    def chart(self, entities, hours, height=None, bars=0, cls="chart", barmap=None, axis=None):
         """entities = [(entity_id, colour or None[, thresholds])] -> HTML of a graph (slot).
         bars = number of bars (histogram only); 0 = curve.
         barmap = {entity rank: number of bars}: bars behind the other curves."""
@@ -969,8 +1091,10 @@ class Builder:
             if stops:
                 color = "#%02x%02x%02x" % stops[0][1]
             color = self.series_color(eid, color, i)
-            keys.append((self.hist_key(eid, hours), color, eid, stops, sfill))
+            group = self.scale_group(eid, ent[4] if len(ent) > 4 else None)
+            keys.append((self.hist_key(eid, hours), color, eid, stops, sfill, group))
         gid = "lg%d" % len(self.slots)
+        sec = self.pal().get("sec") or "#9b9b9b"
 
         def fn(ks=tuple(keys), n=npts, hh=h):
             if bars:
@@ -978,7 +1102,7 @@ class Builder:
                 return (bars_svg(self.store.hist.get(k) or [], hh, color, bars), None)
             series = []
             pre = ""
-            for idx, (k, color, eid, stops, sfill) in enumerate(ks):
+            for idx, (k, color, eid, stops, sfill, group) in enumerate(ks):
                 vals = self.store.hist.get(k) or []
                 if idx in barmap:
                     r = bar_rects(vals, hh, barmap[idx])
@@ -988,7 +1112,10 @@ class Builder:
                 if vals and n < len(vals):
                     step = len(vals) / float(n)
                     vals = [vals[int(j * step)] for j in range(n)]
-                series.append((vals, color, stops, sfill))
+                series.append((vals, color, stops, sfill, group))
+            if axis is not None and any(sum(v is not None for v in s[0]) > 1 for s in series):
+                return (axis_graph(series, hh, max(1, min(MAX_HOURS, int(hours or 24))), axis[0], axis[1],
+                                   sec, gid, not light), None)
             return (spark_svg(series, hh, None, fill=not light and not barmap, pre=pre, gid=gid), None)
         # Type 1: the curve is only redrawn every 30 min (the value itself is live).
         dep = "hist30:" if light else "hist:"
@@ -1731,9 +1858,11 @@ class Builder:
             if not isinstance(f, dict):
                 continue
             if f.get("type") == "trend-graph" and inline and not side:
-                side = self.chart([(eid, None)], f.get("hours_to_show") or 24, 36, cls="chart fi")
+                side = self.chart([(eid, self.tile_color(c.get("color")) or self.accent())],
+                                  f.get("hours_to_show") or 24, 36, cls="chart fi")
             elif f.get("type") == "trend-graph":
-                extra += self.chart([(eid, None)], f.get("hours_to_show") or 24, 42)
+                extra += self.chart([(eid, self.tile_color(c.get("color")) or self.accent())],
+                                    f.get("hours_to_show") or 24, 42)
                 nfeat += 1
             elif f.get("type") == "toggle" and domain_of(eid) in TOGGLE_FEATURE:
                 extra += self.toggle_switch(eid)
@@ -1880,7 +2009,7 @@ class Builder:
         if c.get("type") == "sensor" and c.get("graph") == "line":
             # the curve takes the bottom of the card, under the value (71 px)
             gh = (rows * 56 + (rows - 1) * 8 - 71) if rows else None
-            graph = self.chart([(eid, None)], c.get("hours_to_show") or 24, gh)
+            graph = self.chart([(eid, self.accent())], c.get("hours_to_show") or 24, gh)
         head = '%s<div class="tn">%s</div>' % (
             '<span class="hi">%s</span>' % self.ent_icon(eid, c.get("icon")),
             E(self.nm(eid, c.get("name"))))
@@ -2263,21 +2392,26 @@ class Builder:
         out = ['<div class="card hg w%d" style="%s">' % (cols, self.height(rows)),
                ('<h2 class="ch">%s</h2>' % E(title)) if title else ""]
         series, legend = [], []
-        for e in entities:
-            if isinstance(e, str):
-                e = {"entity": e}
-            eid = e.get("entity") if isinstance(e, dict) else None
-            if not eid or len(series) >= 4:
-                continue
-            color = self.series_color(eid, e.get("color"), len(series))
+        ents = [{"entity": e} if isinstance(e, str) else e for e in entities]
+        ents = [e for e in ents if isinstance(e, dict) and e.get("entity")][:4]
+        for i, e in enumerate(ents):
+            eid = e["entity"]
+            own = e.get("color")                # set in the card, else the HA palette in order
+            color = self.tile_color(own) or SERIES_COLORS[i % len(SERIES_COLORS)]    # name or #hex
             series.append((eid, color))
             legend.append('<span class="lg"><i style="background:%s"></i>%s %s</span>' % (
                 color, E(self.nm(eid, e.get("name"))), self.text_slot(eid, cls="lv")))
         if series:
-            gh = None
-            if rows:   # height of the card - title - legend
-                gh = rows * 56 + (rows - 1) * 8 - (62 if title else 16) - 56
-            out.append(self.chart(series, hours, gh))
+            gh = 150
+            if rows:   # height of the card - title - legend - unit and times of the scale
+                gh = rows * 56 + (rows - 1) * 8 - (62 if title else 16) - 56 - 30
+
+            def bound(k):
+                try:
+                    return float(c.get(k))
+                except (TypeError, ValueError):
+                    return None
+            out.append(self.chart(series, hours, gh, axis=(bound("min_y_axis"), bound("max_y_axis"))))
             out.append('<div class="lgs">%s</div>' % "".join(legend))
         out.append("</div>")
         return "".join(out)
@@ -2435,8 +2569,11 @@ class Builder:
                                      icon, E(title))) if title else ""]
         series, colors, barmap = [], [], []
         barmap = {}
+        autos = self.auto_colors([(e["entity"], "#000000" if self.thresholds(e) else e.get("color"))
+                                  for e in ents])
         for i, e in enumerate(ents):
-            color = self.readable(e.get("color")) if hex_rgb(e.get("color")) else self.series_color(e["entity"], None, i)
+            color = (self.readable(e.get("color")) if hex_rgb(e.get("color"))
+                     else autos[i] or self.series_color(e["entity"], None, i))
             stops = self.thresholds(e)
             if stops:
                 color = self.readable("#%02x%02x%02x" % stops[0][1])
@@ -2449,7 +2586,7 @@ class Builder:
                 except (TypeError, ValueError):
                     pph = 1
                 barmap[len(series)] = max(4, min(48, int(round(hours * pph))))
-            series.append((e["entity"], color, stops, e.get("show_fill") is not False))
+            series.append((e["entity"], color, stops, e.get("show_fill") is not False, e.get("y_axis")))
         if listed:
             for color, e in zip(colors, ents):
                 eid = e["entity"]

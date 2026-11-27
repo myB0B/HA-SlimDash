@@ -362,3 +362,15 @@ indicator only), theme background image (cost on old devices).
   (in `chart`, before `spark_svg`, which is a module function without access to the palette).
 - 0.8.87: cover tile features follow the `color` option of the tile (position slider, active favourite position;
   `tile_color`: mushroom name, #hex, primary, accent; readable in light theme), else the colour of the cover icon.
+- 0.8.88: issue #9: graphs with several curves: curves of the same unit share one scale (`scale_group`, "y_axis:
+  independent" stays alone; Kindle too); when two curves are of the same type, the curves without a colour of their
+  own take the Home Assistant palette (`auto_colors`); one card, no split by unit.
+- 0.8.89: curve colours like Home Assistant (replaces the colours by measurement of 0.8.32 for these cards):
+  sensor card and tile trend graph = accent colour of the theme (tile: its `color` first), history-graph and
+  statistics-graph = HA palette in order; HA colours are not darkened in light theme. The
+  statistics-graph-chart-card keeps its previous colours.
+- 0.8.90: history-graph / statistics-graph with a visible scale (`axis_graph`, `nice_ticks`): graduations and unit
+  on the left, second unit on the right, horizontal grid lines, times (<= 36 h) or dates under the curves,
+  `min_y_axis` / `max_y_axis`. HTML labels (the SVG is stretched). Not on type 0; `line-stack` not reproduced.
+- 0.8.91: graph scale: round times (full hours, or dates at midnight beyond 36 h, `time_ticks`); history-graph and
+  statistics-graph accept colour names (`purple`...) and not only #hex.

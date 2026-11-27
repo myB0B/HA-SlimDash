@@ -28,7 +28,7 @@ import icons
 import render
 import theme
 
-VERSION = "0.8.87"
+VERSION = "0.8.91"
 HERE = os.path.dirname(os.path.abspath(__file__))
 log = logging.getLogger("slimdash")
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
